@@ -109,3 +109,5 @@ venv.bak/
 *.swp
 .idea/
 *.iml
+*.hdf5
+output/
