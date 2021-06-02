@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from random import Random
 
-from ._random import choice
+from . import number_of_subsets, subset_number_to_subset
 from ._types import Dataset, Split
 from ._util import per_label
 
@@ -29,7 +29,16 @@ class RandomSplit(Splitter):
         return f"rand-{self._count}"
 
     def __call__(self, dataset: Dataset) -> Split:
-        choice_set = choice(len(dataset), self._count, self._random)
+        dataset_size = len(dataset)
+
+        # TODO: Change to order_matters = False when available
+        choice_set = subset_number_to_subset(
+            dataset_size,
+            self._count,
+            self._random.randrange(number_of_subsets(dataset_size, self._count, True)),
+            True
+        )
+        choice_set = set(choice_set)
 
         result = OrderedDict(), OrderedDict()
 
