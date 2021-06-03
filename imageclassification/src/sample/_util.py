@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import os
-from typing import Dict, Tuple
+from typing import Dict, Iterable, Tuple
 
 from ._types import Dataset
 
@@ -43,3 +43,12 @@ def split_arg(arg: str) -> Tuple[str, str, str]:
     """
     path_split = os.path.split(arg)
     return (path_split[0], *os.path.splitext(path_split[1]))
+
+
+def first(iterable: Iterable):
+    for el in iterable:
+        return el
+
+
+def compare_ignore_index(item: Tuple[int, float]) -> float:
+    return item[1]

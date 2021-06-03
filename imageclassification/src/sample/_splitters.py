@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from random import Random
+from typing import Dict
 
-from . import number_of_subsets, subset_number_to_subset
+import numpy as np
+
+from ._math import number_of_subsets, subset_number_to_subset
+from ._keras import dataset_predictions_ResNet50
+from ._kernel import RBFKernel
 from ._types import Dataset, Split
-from ._util import per_label
+from ._util import compare_ignore_index, per_label
 
 
 class Splitter(ABC):
@@ -77,3 +82,78 @@ class StratifiedSplit(Splitter):
             result[result_index][filename] = label
 
         return result
+
+
+class KernelHerdingSplit(Splitter):
+    """
+    TODO
+    """
+    _predictions_cache: Dict[str, np.ndarray] = {}
+
+    def __init__(self, root_path: str, count: int):
+        self._root_path = root_path
+        self._count = count
+        self._kernel = RBFKernel()
+
+    def __call__(self, dataset: Dataset) -> Split:
+        self._predictions_cache.update(
+            dataset_predictions_ResNet50(
+                self._root_path,
+                OrderedDict({
+                    filename: label
+                    for filename, label in dataset.items()
+                    if filename not in self._predictions_cache
+                })
+            )
+        )
+        print("UPDATED PREDICTIONS CACHE")
+
+        kernel_list = [self._predictions_cache[filename] for filename in dataset.keys()]
+        dataset_size = len(dataset)
+
+        self._kernel.build_kernel(kernel_list)
+        print("BUILT KERNEL")
+
+        estimated_expected_similarity = [
+            sum(self._kernel.eval(i, j, kernel_list[i]) for j in range(dataset_size)) / dataset_size
+            for i in range(dataset_size)
+        ]
+        print("ESTIMATED EXPECTED SIMILARITY")
+
+        index, max_score = max(enumerate(estimated_expected_similarity), key=compare_ignore_index)
+
+        num_sampled = 0
+        accumulated_similarity_to_sample = [0.0] * dataset_size
+        selected = [False] * dataset_size
+        while True:
+            selected[index] = True
+            num_sampled += 1
+            print(f"SELECTED ITEM {index} OF {dataset_size}")
+            if num_sampled >= self._count:
+                break
+
+            for i in range(dataset_size):
+                if not selected[i]:
+                    accumulated_similarity_to_sample[i] += self._kernel.eval(i, index, kernel_list[i])
+            print("UPDATED ACCUMULATED SIMILARITIES")
+
+            index, max_score = max(
+                (
+                    (i, estimated_expected_similarity[i] - accumulated_similarity_to_sample[i] / (num_sampled + 1))
+                    for i in range(dataset_size)
+                    if not selected[i]
+                ),
+                key=compare_ignore_index
+            )
+
+        result = OrderedDict(), OrderedDict()
+
+        for index, filename in enumerate(dataset.keys()):
+            result_index = 0 if selected[index] else 1
+
+            result[result_index][filename] = dataset[filename]
+
+        return result
+
+    def __str__(self) -> str:
+        return f"kh-{self._count}"
