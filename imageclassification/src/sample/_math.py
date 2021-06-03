@@ -3,7 +3,7 @@ from typing import List, Set, Union
 
 def factorial(
         of: int,
-        down_to: int = 1
+        down_to: int = 0
 ) -> int:
     """
     Returns the multiplication of all positive integers from ``of`` down
@@ -23,8 +23,7 @@ def factorial(
     if of < down_to:
         raise ArithmeticError(f"'of' must be at least 'down_to', got 'of = {of}, 'down_to' = {down_to}")
 
-    result = of
-    of -= 1
+    result = 1
     while of > down_to:
         result *= of
         of -= 1
@@ -106,10 +105,9 @@ def subset_to_subset_number(
 
         return result
     else:
-        # TODO
-        raise ArithmeticError(
-            "Can't calculate the subset number of an unordered subset"
-        )
+        sorted = list(subset)
+        sorted.sort(reverse=True)
+        return sum(number_of_subsets(n, subset_size - k) for k, n in enumerate(sorted))
 
 
 def subset_number_to_subset(
@@ -133,7 +131,18 @@ def subset_number_to_subset(
 
         return subset
     else:
-        # TODO
-        raise ArithmeticError(
-            "Can't decode the subset number of an unordered subset"
-        )
+        subset = set()
+        num_subsets = number_of_subsets(set_size - 1, subset_size)
+        k = subset_size
+        for n in reversed(range(set_size)):
+            if subset_number >= num_subsets:
+                subset_number -= num_subsets
+                subset.add(n)
+                if len(subset) == subset_size:
+                    break
+                num_subsets = num_subsets * k // n
+                k -= 1
+            else:
+                num_subsets = num_subsets * (n - k) // n
+
+        return subset

@@ -36,12 +36,10 @@ class RandomSplit(Splitter):
     def __call__(self, dataset: Dataset) -> Split:
         dataset_size = len(dataset)
 
-        # TODO: Change to order_matters = False when available
         choice_set = subset_number_to_subset(
             dataset_size,
             self._count,
-            self._random.randrange(number_of_subsets(dataset_size, self._count, True)),
-            True
+            self._random.randrange(number_of_subsets(dataset_size, self._count))
         )
         choice_set = set(choice_set)
 
