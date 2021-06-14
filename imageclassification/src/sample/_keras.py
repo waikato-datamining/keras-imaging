@@ -9,6 +9,7 @@ from ._types import Dataset
 
 def dataset_predictions_ResNet50(path: str, dataset: Dataset) -> Dict[str, np.ndarray]:
     model = keras.applications.ResNet50()
+    model = keras.models.Model(model.input, model.layers[-2].output)
     dataset_size = len(dataset)
 
     result = {}
