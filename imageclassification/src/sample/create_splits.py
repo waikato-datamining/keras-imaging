@@ -13,11 +13,6 @@ SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
 print(f"SOURCE PATH = {SOURCE_PATH}")
 print(f"SOURCE DATASET = {SOURCE_DATASET}{SOURCE_EXT}")
 
-DEST_PATH = os.path.join(SOURCE_PATH, "splits")
-os.makedirs(DEST_PATH, exist_ok=True)
-
-print(f"DEST PATH = {DEST_PATH}")
-
 NUM_HOLDOUTS_PER_LABEL = 5
 NUM_ITEMS_PER_LABEL_PER_ITERATION = 5
 NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION = 2
@@ -29,6 +24,8 @@ print(f"VALIDATION ITEMS PER LABEL = {NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATI
 source_dataset = load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT))
 
 print(f"NUM ITEMS = {len(source_dataset)}")
+for label, label_dataset in per_label(source_dataset).items():
+    print(f"  {label}: {len(label_dataset)}")
 
 NUM_LABELS = num_labels(source_dataset)
 
@@ -42,8 +39,13 @@ print(f"HOLDOUT SPLITTER = {HOLDOUT_SPLITTER}")
 print(f"TRAIN SPLITTER = {TRAIN_SPLITTER}")
 print(f"VALIDATION SPLITTER = {VALIDATION_SPLITTER}")
 
+DEST_PATH = os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.{HOLDOUT_SPLITTER}.{TRAIN_SPLITTER}.{VALIDATION_SPLITTER}.splits")
+os.makedirs(DEST_PATH, exist_ok=True)
+
+print(f"DEST PATH = {DEST_PATH}")
+
 holdout_dataset, left_in_dataset = HOLDOUT_SPLITTER(source_dataset)
-holdout_dataset_dest = os.path.join(DEST_PATH, SOURCE_DATASET + f".holdout.{HOLDOUT_SPLITTER}" + SOURCE_EXT)
+holdout_dataset_dest = os.path.join(DEST_PATH, "holdout" + SOURCE_EXT)
 write_dataset(holdout_dataset, holdout_dataset_dest)
 print(f"WROTE HOLDOUT DATASET TO {holdout_dataset_dest}")
 
@@ -61,10 +63,10 @@ for iteration in count():
     train_proper_dataset = merge(train_proper_dataset, train_proper_addition_dataset)
     validation_dataset = merge(validation_dataset, validation_addition_dataset)
 
-    train_proper_dataset_dest = os.path.join(DEST_PATH, SOURCE_DATASET + f".train.{TRAIN_SPLITTER}.{iteration}" + SOURCE_EXT)
+    train_proper_dataset_dest = os.path.join(DEST_PATH, f"train.{iteration}" + SOURCE_EXT)
     write_dataset(train_proper_dataset, train_proper_dataset_dest)
     print(f"WROTE TRAIN DATASET FOR ITERATION {iteration} TO {train_proper_dataset_dest}")
 
-    validation_dataset_dest = os.path.join(DEST_PATH, SOURCE_DATASET + f".validation.{VALIDATION_SPLITTER}.{iteration}" + SOURCE_EXT)
+    validation_dataset_dest = os.path.join(DEST_PATH, f"validation.{iteration}" + SOURCE_EXT)
     write_dataset(validation_dataset, validation_dataset_dest)
     print(f"WROTE VALIDATION DATASET FOR ITERATION {iteration} TO {validation_dataset_dest}")
