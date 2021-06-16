@@ -27,13 +27,14 @@ print(f"NUM ITEMS = {len(source_dataset)}")
 for label, label_dataset in per_label(source_dataset).items():
     print(f"  {label}: {len(label_dataset)}")
 
-NUM_LABELS = num_labels(source_dataset)
+LABELS = set(source_dataset.values())
+NUM_LABELS = len(LABELS)
 
 print(f"NUM LABELS = {NUM_LABELS}")
 
-HOLDOUT_SPLITTER: Splitter = StratifiedSplit(NUM_HOLDOUTS_PER_LABEL, RANDOM)
-TRAIN_SPLITTER: Splitter = KernelHerdingSplit(SOURCE_PATH, NUM_ITEMS_PER_LABEL_PER_ITERATION * NUM_LABELS)
-VALIDATION_SPLITTER: Splitter = KernelHerdingSplit(SOURCE_PATH, NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION * NUM_LABELS)
+HOLDOUT_SPLITTER: Splitter = StratifiedSplit(NUM_HOLDOUTS_PER_LABEL, LABELS, RANDOM)
+TRAIN_SPLITTER: Splitter = StratifiedSplit(NUM_ITEMS_PER_LABEL_PER_ITERATION, LABELS, RANDOM)
+VALIDATION_SPLITTER: Splitter = StratifiedSplit(NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION, LABELS, RANDOM)
 
 print(f"HOLDOUT SPLITTER = {HOLDOUT_SPLITTER}")
 print(f"TRAIN SPLITTER = {TRAIN_SPLITTER}")

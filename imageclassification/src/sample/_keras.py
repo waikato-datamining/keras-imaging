@@ -2,10 +2,42 @@ import os
 from collections import OrderedDict
 from typing import Dict, Iterator, Tuple
 
+from pandas import DataFrame
 import numpy as np
 from tensorflow import keras
 
 from ._types import Dataset, DatasetWithData
+
+
+def data_flow_from_disk(
+        path: str,
+        dataset: Dataset,
+        label_indices: Dict[str, int],
+        shuffle: bool,
+        batch_size: int,
+        seed: int
+):
+    gen = keras.preprocessing.image.ImageDataGenerator(
+        preprocessing_function=keras.applications.resnet.preprocess_input
+    )
+
+    df = DataFrame(
+        data={
+            "filename": list(dataset.keys()),
+            "class": list(label_indices[label] for label in dataset.values())
+        },
+        columns=["filename", "class"]
+    )
+
+    return gen.flow_from_dataframe(
+        df,
+        path,
+        target_size=(224, 224),
+        class_mode="raw",
+        batch_size=batch_size,
+        shuffle=shuffle,
+        seed=seed
+    )
 
 
 def data_flow(

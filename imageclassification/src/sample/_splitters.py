@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from random import Random
-from typing import Dict
+from typing import Dict, Set
 
 import numpy as np
 
@@ -36,6 +36,9 @@ class RandomSplit(Splitter):
     def __call__(self, dataset: Dataset) -> Split:
         dataset_size = len(dataset)
 
+        if self._count > dataset_size:
+            raise ValueError(f"Can't select sub-set of size {self._count} from data-set of size {dataset_size}")
+
         choice_set = subset_number_to_subset(
             dataset_size,
             self._count,
@@ -57,8 +60,9 @@ class StratifiedSplit(Splitter):
     """
     TODO
     """
-    def __init__(self, count_per_label: int, random: Random = Random()):
+    def __init__(self, count_per_label: int, labels: Set[str], random: Random = Random()):
         self._count_per_label = count_per_label
+        self._labels = labels
         self._random = random
 
     def __str__(self) -> str:
@@ -68,8 +72,8 @@ class StratifiedSplit(Splitter):
         subsets_per_label = per_label(dataset)
         sub_splitter = RandomSplit(self._count_per_label, self._random)
         sub_splits = {
-            label: sub_splitter(label_dataset)
-            for label, label_dataset in subsets_per_label.items()
+            label: sub_splitter(subsets_per_label[label])
+            for label in self._labels
         }
 
         result = OrderedDict(), OrderedDict()
