@@ -8,7 +8,7 @@ from sample import *
 
 INIT_LR = 1e-4
 BS = 5
-NUM_EPOCHS = 2
+NUM_EPOCHS = 10
 SEED = 42
 
 SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])

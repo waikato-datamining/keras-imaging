@@ -2,7 +2,7 @@
 ARG DOCKER_REGISTRY=public.aml-repo.cms.waikato.ac.nz:443/
 FROM ${DOCKER_REGISTRY}nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
 
-ARG PYTHON=python3.7
+ARG PYTHON=python3.8
 
 # ======== #
 # OS Setup #
@@ -26,7 +26,7 @@ RUN \
     git clone https://github.com/waikato-datamining/keras-imaging.git && \
     ${PYTHON} -m venv venv && \
     ./venv/bin/pip install --upgrade pip setuptools && \
-    ./venv/bin/pip install tensorflow pandas pillow scipy
+    ./venv/bin/pip install tensorflow==2.4.0 pandas pillow scipy
 
 ENV PYTHONPATH=/source/keras-imaging/imageclassification/src
 
