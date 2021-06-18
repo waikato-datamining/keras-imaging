@@ -21,7 +21,7 @@ def data_flow_from_disk(
         preprocessing_function=keras.applications.resnet.preprocess_input
     )
 
-    df = DataFrame(
+    dataframe = DataFrame(
         data={
             "filename": list(dataset.keys()),
             "class": list(label_indices[label] for label in dataset.values())
@@ -30,7 +30,7 @@ def data_flow_from_disk(
     )
 
     return gen.flow_from_dataframe(
-        df,
+        dataframe,
         path,
         target_size=(224, 224),
         class_mode="raw",
@@ -99,10 +99,12 @@ def dataset_iter_data(path: str, dataset: Dataset) -> Iterator[Tuple[str, str, n
 
 def load_image(path: str, filename: str) -> np.ndarray:
     return np.array([
-        keras.preprocessing.image.img_to_array(
-            keras.preprocessing.image.load_img(
-                os.path.join(path, filename),
-                target_size=(224, 224)
+        keras.applications.resnet.preprocess_input(
+            keras.preprocessing.image.img_to_array(
+                keras.preprocessing.image.load_img(
+                    os.path.join(path, filename),
+                    target_size=(224, 224)
+                )
             )
         )
     ])

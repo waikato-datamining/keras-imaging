@@ -23,13 +23,6 @@ def per_label(dataset: Dataset) -> Dict[str, Dataset]:
     return result
 
 
-def num_labels(dataset: Dataset) -> int:
-    """
-    TODO
-    """
-    return len(set(dataset.values()))
-
-
 def merge(d1: Dataset, d2: Dataset) -> Dataset:
     """
     TODO

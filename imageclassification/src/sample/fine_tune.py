@@ -7,7 +7,7 @@ from tensorflow import keras
 from sample import *
 
 INIT_LR = 1e-4
-BS = 4
+BS = 5
 NUM_EPOCHS = 2
 SEED = 42
 
@@ -25,11 +25,7 @@ for label in label_indices.keys():
     PREDICTIONS_FILE_HEADER += f",{label}_prob"
 PREDICTIONS_FILE_HEADER += "\n"
 
-with open(f"holdout.txt", "r") as file:
-    holdout_dataset = OrderedDict((
-        (filename.strip(), source_dataset_without_data[filename.strip()])
-        for filename in file.readlines()
-    ))
+holdout_dataset = load_dataset("holdout.txt")
 
 holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, False, BS, SEED)
 
@@ -40,21 +36,12 @@ while True:
 
     print(f"ITERATION {iteration}")
 
-    model = ResNet50_for_fine_tuning(num_labels(source_dataset_without_data))
+    model = ResNet50_for_fine_tuning(len(label_indices))
     opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
     model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
-    with open(f"train.{iteration}.txt", "r") as file:
-        train_dataset = OrderedDict((
-            (filename.strip(), source_dataset_without_data[filename.strip()])
-            for filename in file.readlines()
-        ))
-
-    with open(f"validation.{iteration}.txt", "r") as file:
-        validation_dataset = OrderedDict((
-            (filename.strip(), source_dataset_without_data[filename.strip()])
-            for filename in file.readlines()
-        ))
+    train_dataset = load_dataset(f"train.{iteration}.txt")
+    validation_dataset = load_dataset(f"validation.{iteration}.txt")
 
     train_gen = data_flow_from_disk(SOURCE_PATH, train_dataset, label_indices, True, BS, SEED)
     val_gen = data_flow_from_disk(SOURCE_PATH, validation_dataset, label_indices, False, BS, SEED)
