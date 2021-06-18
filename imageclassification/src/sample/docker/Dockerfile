@@ -1,6 +1,6 @@
 # Ubuntu 18.04 with Python 3.7
 ARG DOCKER_REGISTRY=public.aml-repo.cms.waikato.ac.nz:443/
-FROM ${DOCKER_REGISTRY}nvidia/cuda:11.0.3-devel-ubuntu18.04
+FROM ${DOCKER_REGISTRY}nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
 
 ARG PYTHON=python3.7
 
