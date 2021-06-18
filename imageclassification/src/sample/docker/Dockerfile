@@ -13,7 +13,7 @@ RUN \
     # Install necessary tools for the build
     apt-get update && \
     apt-get install -y --no-install-recommends git-core libglib2.0-0 libsm6 libxrender-dev libxrender1 libxext6 postgresql wget && \
-    apt-get install -y build-essential ${PYTHON} ${PYTHON}-dev lib${PYTHON}-dev virtualenv && \
+    apt-get install -y build-essential ${PYTHON} ${PYTHON}-dev lib${PYTHON}-dev virtualenv ${PYTHON}-venv && \
     # Clean up the apt cache
     rm -rf /var/lib/apt/lists/*
 
@@ -26,9 +26,9 @@ RUN \
     git clone https://github.com/waikato-datamining/keras-imaging.git && \
     ${PYTHON} -m venv venv && \
     ./venv/bin/pip install --upgrade pip setuptools && \
-    ./venv/bin/pip install tensorflow pandas
+    ./venv/bin/pip install tensorflow pandas pillow scipy
 
-ENV PYTHON_PATH=/source/keras-imaging
+ENV PYTHONPATH=/source/keras-imaging/imageclassification/src
 
 # Start in the root dir of the backend
 WORKDIR /source/splits
