@@ -5,6 +5,28 @@ from typing import List, Optional
 import numpy as np
 
 
+class RBFKernel2:
+    """
+    TODO
+    """
+    def __init__(self, data: np.ndarray):
+        self._data = data
+        self._gamma: float = 0.01
+        self._kernel_precalc = np.sum(np.square(data), axis=1)
+        data_range = np.arange(data.shape[0])
+        precalcs_id1 = self._kernel_precalc[data_range, np.newaxis]
+        precalcs_id2 = self._kernel_precalc[np.newaxis, data_range]
+        dps = np.tensordot(
+            data,
+            data,
+            axes=([1], [1])
+        )
+        self._kernel_matrix = np.exp(-self._gamma * (precalcs_id1 - 2 * dps + precalcs_id2))
+
+    def eval(self, id1: int, id2: int) -> float:
+        return self._kernel_matrix[id1][id2]
+
+
 class Kernel(ABC):
     """
     TODO
@@ -122,7 +144,7 @@ class RBFKernel(CachedKernel):
         super().build_kernel(data)
 
         self._kernel_precalc = [
-            sum(value ** 2 for value in item.flat)
+            np.sum(np.square(item))
             for item in data
         ]
 

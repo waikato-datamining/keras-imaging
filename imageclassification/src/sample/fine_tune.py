@@ -1,29 +1,28 @@
 import os
 import sys
 from collections import OrderedDict
+from random import Random
 
 from tensorflow import keras
 
 from sample import *
+from sample.splitters import RandomSplitter
 
 INIT_LR = 1e-4
 BS = 5
 NUM_EPOCHS = 10
 SEED = 42
+VALIDATION_PERCENT = 0.15
+
+RANDOM = Random(SEED)
 
 SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
 
-source_dataset_without_data = load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT))
+source_dataset = load_dataset("schedule.txt")
 
-label_indices = OrderedDict()
-for label in source_dataset_without_data.values():
-    if label not in label_indices:
-        label_indices[label] = len(label_indices)
+label_indices = label_indices(load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT)))
 
-PREDICTIONS_FILE_HEADER = "filename,label"
-for label in label_indices.keys():
-    PREDICTIONS_FILE_HEADER += f",{label}_prob"
-PREDICTIONS_FILE_HEADER += "\n"
+PREDICTIONS_FILE_HEADER = predictions_file_header(label_indices)
 
 holdout_dataset = load_dataset("holdout.txt")
 
@@ -31,17 +30,21 @@ holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, F
 
 iteration = 0
 while True:
-    if not os.path.exists(f"train.{iteration}.txt") or not os.path.exists(f"validation.{iteration}.txt"):
+    subset_size = iteration + 2
+
+    if subset_size > len(source_dataset):
         break
 
     print(f"ITERATION {iteration}")
 
+    validation_size = max(int(subset_size * VALIDATION_PERCENT), 1)
+
+    train_dataset = top_n(source_dataset, subset_size)
+    validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(train_dataset)
+
     model = ResNet50_for_fine_tuning(len(label_indices))
     opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
     model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-
-    train_dataset = load_dataset(f"train.{iteration}.txt")
-    validation_dataset = load_dataset(f"validation.{iteration}.txt")
 
     train_gen = data_flow_from_disk(SOURCE_PATH, train_dataset, label_indices, True, BS, SEED)
     val_gen = data_flow_from_disk(SOURCE_PATH, validation_dataset, label_indices, False, BS, SEED)
@@ -52,13 +55,10 @@ while True:
         epochs=NUM_EPOCHS
     )
 
-    with open(f"predictions.{iteration}.txt", "w") as file:
-        file.write(PREDICTIONS_FILE_HEADER)
-        for holdout_item, prediction in zip(holdout_dataset.items(), model.predict(holdout_gen)):
-            line = f"{holdout_item[0]},{holdout_item[1]}"
-            for probability in prediction:
-                line += f",{probability}"
-            line += "\n"
-            file.write(line)
+    predictions: Predictions = OrderedDict()
+    for holdout_item, prediction in zip(holdout_dataset.keys(), model.predict(holdout_gen)):
+        predictions[holdout_item] = prediction
+
+    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{iteration}.txt")
 
     iteration += 1

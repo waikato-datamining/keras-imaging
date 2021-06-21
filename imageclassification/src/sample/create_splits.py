@@ -1,25 +1,20 @@
 import os
-from collections import OrderedDict
-from itertools import count
 from random import Random
 import sys
 
 from sample import *
+from sample.splitters import *
+from sample.schedulers import *
 
 RANDOM = Random(42)
+HOLDOUT_PERCENT = 0.15
 
 SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
 
 print(f"SOURCE PATH = {SOURCE_PATH}")
 print(f"SOURCE DATASET = {SOURCE_DATASET}{SOURCE_EXT}")
 
-NUM_HOLDOUTS_PER_LABEL = 5
-NUM_ITEMS_PER_LABEL_PER_ITERATION = 5
-NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION = 1
-
-print(f"HOLDOUTS PER LABEL = {NUM_HOLDOUTS_PER_LABEL}")
-print(f"DATASET ITEMS PER LABEL = {NUM_ITEMS_PER_LABEL_PER_ITERATION}")
-print(f"VALIDATION ITEMS PER LABEL = {NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION}")
+print(f"HOLDOUT PERCENTAGE = {HOLDOUT_PERCENT}")
 
 source_dataset = load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT))
 
@@ -27,20 +22,19 @@ print(f"NUM ITEMS = {len(source_dataset)}")
 for label, label_dataset in per_label(source_dataset).items():
     print(f"  {label}: {len(label_dataset)}")
 
-LABELS = set(source_dataset.values())
+LABELS = label_indices(source_dataset)
 NUM_LABELS = len(LABELS)
 
 print(f"NUM LABELS = {NUM_LABELS}")
 
-HOLDOUT_SPLITTER: Splitter = RandomSplit(NUM_HOLDOUTS_PER_LABEL * NUM_LABELS, RANDOM)
-TRAIN_SPLITTER: Splitter = KernelHerdingSplit(SOURCE_PATH, NUM_ITEMS_PER_LABEL_PER_ITERATION * NUM_LABELS)
-VALIDATION_SPLITTER: Splitter = RandomSplit(NUM_VALIDATION_ITEMS_PER_LABEL_PER_ITERATION * NUM_LABELS, RANDOM)
+HOLDOUT_SPLITTER: Splitter = StratifiedSplitter(HOLDOUT_PERCENT, LABELS, RANDOM)
 
-print(f"HOLDOUT SPLITTER = {HOLDOUT_SPLITTER}")
-print(f"TRAIN SPLITTER = {TRAIN_SPLITTER}")
-print(f"VALIDATION SPLITTER = {VALIDATION_SPLITTER}")
+#TRAIN_SCHEDULER: Scheduler = RandomScheduler(RANDOM)
+#TRAIN_SCHEDULER: Scheduler = UniformScheduler(RANDOM)
+#TRAIN_SCHEDULER: Scheduler = StratifiedScheduler(RANDOM)
+TRAIN_SCHEDULER: Scheduler = KernelHerdingScheduler(os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.predictions.txt"))
 
-DEST_PATH = os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.{HOLDOUT_SPLITTER}.{TRAIN_SPLITTER}.{VALIDATION_SPLITTER}.splits")
+DEST_PATH = os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.{HOLDOUT_SPLITTER}.{TRAIN_SCHEDULER}.splits")
 os.makedirs(DEST_PATH, exist_ok=True)
 
 print(f"DEST PATH = {DEST_PATH}")
@@ -50,24 +44,7 @@ holdout_dataset_dest = os.path.join(DEST_PATH, "holdout" + SOURCE_EXT)
 write_dataset(holdout_dataset, holdout_dataset_dest)
 print(f"WROTE HOLDOUT DATASET TO {holdout_dataset_dest}")
 
-train_proper_dataset, validation_dataset = OrderedDict(), OrderedDict()
-
-for iteration in count():
-    print(f"ITERATION {iteration}")
-
-    train_addition_dataset, left_in_dataset = TRAIN_SPLITTER(left_in_dataset)
-    print("SELECTED TRAIN DATASET")
-
-    validation_addition_dataset, train_proper_addition_dataset = VALIDATION_SPLITTER(train_addition_dataset)
-    print("SELECTED VALIDATION DATASET")
-
-    train_proper_dataset = merge(train_proper_dataset, train_proper_addition_dataset)
-    validation_dataset = merge(validation_dataset, validation_addition_dataset)
-
-    train_proper_dataset_dest = os.path.join(DEST_PATH, f"train.{iteration}" + SOURCE_EXT)
-    write_dataset(train_proper_dataset, train_proper_dataset_dest)
-    print(f"WROTE TRAIN DATASET FOR ITERATION {iteration} TO {train_proper_dataset_dest}")
-
-    validation_dataset_dest = os.path.join(DEST_PATH, f"validation.{iteration}" + SOURCE_EXT)
-    write_dataset(validation_dataset, validation_dataset_dest)
-    print(f"WROTE VALIDATION DATASET FOR ITERATION {iteration} TO {validation_dataset_dest}")
+schedule = TRAIN_SCHEDULER(left_in_dataset)
+with open(os.path.join(DEST_PATH, "schedule.txt"), "w") as file:
+    for item in schedule:
+        file.write(item + "\n")

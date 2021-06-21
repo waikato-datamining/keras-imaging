@@ -4,6 +4,8 @@ import numpy as np
 
 Dataset = OrderedDict[str, str]
 
-DatasetWithData = OrderedDict[str, Tuple[str, np.ndarray]]
-
 Split = Tuple[Dataset, Dataset]
+
+Predictions = OrderedDict[str, np.ndarray]
+
+LabelIndices = OrderedDict[str, int]

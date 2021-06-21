@@ -1,4 +1,5 @@
-from typing import List, Set, Union
+from fractions import Fraction
+from typing import List, Set, Tuple, Union
 
 
 def factorial(
@@ -146,3 +147,71 @@ def subset_number_to_subset(
                 num_subsets = num_subsets * (n - k) // n
 
         return subset
+
+
+def calculate_schedule(ratios: Tuple[int]) -> List[int]:
+    """
+    Calculates the schedule of labels to return to best split
+    items into the bins.
+
+    :return:    The label schedule.
+    """
+    # Initialise an empty schedule
+    schedule: List[int] = []
+
+    # The initial best candidate binning is all bins empty
+    best_candidate: Tuple[int] = tuple(0 for _ in range(len(ratios)))
+
+    # The schedule cycle-length is the sum of ratios
+    i = 0
+    for schedule_index in range(sum(ratios)):
+        print(i)
+        i+=1
+        # Create a candidate ratio for each of the possible binnings
+        # (each being a single item added to one of the bins)
+        candidate_ratios: Tuple[Tuple[int, ...]] = tuple(
+            tuple(ratio + 1 if i == candidate_index else ratio
+                  for i, ratio in enumerate(best_candidate))
+            for candidate_index in range(len(ratios))
+        )
+
+        # Calculate the integer dot-product of each candidate ratio
+        # to determine which is closest to the desired ratio
+        candidate_dps: Tuple[Fraction, ...] = tuple(
+            integer_dot_product(ratios, candidate_ratio)
+            for candidate_ratio in candidate_ratios
+        )
+
+        # Select the candidate with the best (greatest) dot-product
+        best_candidate_index = None
+        best_candidate_dp = None
+        for candidate_index, candidate_dp in enumerate(candidate_dps):
+            if best_candidate_index is None or candidate_dp > best_candidate_dp:
+                best_candidate = candidate_ratios[candidate_index]
+                best_candidate_index = candidate_index
+                best_candidate_dp = candidate_dp
+
+        # Add the selected candidate bin to the schedule
+        schedule.append(best_candidate_index)
+
+    return schedule
+
+
+def integer_dot_product(a: Tuple[int], b: Tuple[int]) -> Fraction:
+    """
+    Calculates the square of the dot-product between to vectors
+    of integers.
+
+    :param a:   The first integer vector.
+    :param b:   The second integer vector.
+    :return:    The square of the dot-product.
+    """
+    # Make sure the vectors are the same length
+    if len(a) != len(b):
+        raise ValueError(f"Can't perform integer dot product between vectors of different "
+                         f"lengths: {a}, {b}")
+
+    return Fraction(
+        sum(a_i * b_i for a_i, b_i in zip(a, b)) ** 2,
+        sum(a_i ** 2 for a_i in a) * sum(b_i ** 2 for b_i in b)
+    )

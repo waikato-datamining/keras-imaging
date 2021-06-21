@@ -1,18 +1,16 @@
-import os
 from collections import OrderedDict
-from typing import Dict, Iterator, Tuple
 
 from pandas import DataFrame
-import numpy as np
 from tensorflow import keras
 
-from ._types import Dataset, DatasetWithData
+from ._types import Dataset, Predictions, LabelIndices
+from ._util import label_indices
 
 
 def data_flow_from_disk(
         path: str,
         dataset: Dataset,
-        label_indices: Dict[str, int],
+        label_indices: LabelIndices,
         shuffle: bool,
         batch_size: int,
         seed: int
@@ -40,21 +38,6 @@ def data_flow_from_disk(
     )
 
 
-def data_flow(
-        dataset: DatasetWithData,
-        label_indices: Dict[str, int],
-        shuffle: bool,
-        batch_size: int
-):
-    gen = keras.preprocessing.image.ImageDataGenerator()
-    return gen.flow(
-        np.array([item[1][0] for item in dataset.values()]),
-        [label_indices[item[0]] for item in dataset.values()],
-        batch_size=batch_size,
-        shuffle=shuffle
-    )
-
-
 def ResNet50_for_fine_tuning(num_labels: int) -> keras.models.Model:
     base_model = keras.applications.ResNet50(include_top=False)
     base_model.trainable = False
@@ -70,41 +53,34 @@ def ResNet50_for_fine_tuning(num_labels: int) -> keras.models.Model:
     return keras.models.Model(inputs=inputs, outputs=fine_tuning_model)
 
 
-def dataset_predictions_ResNet50(path: str, dataset: Dataset) -> Dict[str, np.ndarray]:
+class MyLogger(keras.callbacks.Callback):
+    def __init__(self, batch_size: int, num_items: int):
+        self._batch_size = batch_size
+        self._num_items = num_items
+
+    def on_predict_batch_end(self, batch, logs=None):
+        print(f"predicted {(batch + 1) * self._batch_size} of {self._num_items}")
+
+
+def dataset_predictions_ResNet50(path: str, dataset: Dataset) -> Predictions:
     model = keras.applications.ResNet50()
     model = keras.models.Model(model.input, model.layers[-2].output)
     dataset_size = len(dataset)
 
-    result = {}
+    predictions = model.predict(
+        data_flow_from_disk(
+            path,
+            dataset,
+            label_indices(dataset),  # Doesn't actually matter
+            False,
+            5,
+            0
+        ),
+        callbacks=[MyLogger(5, dataset_size)]
+    )
 
-    for index, item in enumerate(dataset_iter_data(path, dataset), 1):
-        filename, _, data = item
-        result[filename] = model(data).numpy()
-        print(f"GENERATED PREDICTION {index} OF {dataset_size}")
+    result = OrderedDict()
+    for i, filename in enumerate(dataset.keys()):
+        result[filename] = predictions[i]
 
     return result
-
-
-def dataset_with_data(path: str, dataset: Dataset) -> DatasetWithData:
-    return OrderedDict((
-        (filename, (label, data))
-        for filename, label, data in dataset_iter_data(path, dataset)
-    ))
-
-
-def dataset_iter_data(path: str, dataset: Dataset) -> Iterator[Tuple[str, str, np.ndarray]]:
-    for filename, label in dataset.items():
-        yield filename, label, load_image(path, filename)
-
-
-def load_image(path: str, filename: str) -> np.ndarray:
-    return np.array([
-        keras.applications.resnet.preprocess_input(
-            keras.preprocessing.image.img_to_array(
-                keras.preprocessing.image.load_img(
-                    os.path.join(path, filename),
-                    target_size=(224, 224)
-                )
-            )
-        )
-    ])
