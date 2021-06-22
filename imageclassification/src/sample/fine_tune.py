@@ -10,7 +10,7 @@ from sample.splitters import RandomSplitter
 
 INIT_LR = 1e-4
 BS = 5
-NUM_EPOCHS = 10
+NUM_EPOCHS = 50
 SEED = 42
 VALIDATION_PERCENT = 0.15
 
@@ -30,7 +30,7 @@ holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, F
 
 iteration = 0
 while True:
-    subset_size = iteration + 2
+    subset_size = (iteration + 1) * len(label_indices)
 
     if subset_size > len(source_dataset):
         break
