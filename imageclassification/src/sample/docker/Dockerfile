@@ -34,3 +34,5 @@ ENV PYTHONPATH=/source/keras-imaging/imageclassification/src
 WORKDIR /source/splits
 
 ENTRYPOINT ["../venv/bin/python", "../keras-imaging/imageclassification/src/sample/fine_tune.py", "../dataset.txt"]
+
+CMD ["50"]

@@ -10,7 +10,7 @@ from sample.splitters import RandomSplitter
 
 INIT_LR = 1e-4
 BS = 5
-NUM_EPOCHS = 50
+NUM_EPOCHS = int(sys.argv[2])
 SEED = 42
 VALIDATION_PERCENT = 0.15
 
