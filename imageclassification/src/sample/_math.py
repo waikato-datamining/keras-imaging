@@ -1,5 +1,9 @@
 from fractions import Fraction
-from typing import List, Set, Tuple, Union
+from random import Random
+from typing import List, Set, Tuple, Union, TypeVar
+
+
+_T = TypeVar("_T")
 
 
 def factorial(
@@ -147,6 +151,63 @@ def subset_number_to_subset(
                 num_subsets = num_subsets * (n - k) // n
 
         return subset
+
+
+def random_subset(
+        collection: List[_T],
+        subset_size: int,
+        random: Random = Random(),
+        order_matters: bool = False
+) -> Union[List[_T], Set[_T]]:
+    """
+    Generates a random subset of the given collection, of the
+    given size.
+
+    :param collection:
+                The collection to select from.
+    :param subset_size:
+                The number of items to select.
+    :param random:
+                An optional source of randomness.
+    :param order_matters:
+                Whether the order of selection matters.
+    :return:
+                The subset, as a list if order matters or
+                a set if not.
+    """
+    size = len(collection)
+    num_subsets = number_of_subsets(size, subset_size, order_matters)
+    subset_number = random.randrange(num_subsets)
+    indices = subset_number_to_subset(size, subset_size, subset_number, order_matters)
+    return (list if order_matters else set)(collection[index] for index in indices)
+
+
+def number_of_permutations(size: int) -> int:
+    """
+    Calculates the number of possible permutations of a collection
+    of the given size.
+
+    :param size:
+                The number of items in the collection.
+    :return:
+                The number of possible permutations of a collection
+                of the given size.
+    """
+    return number_of_subsets(size, size, True)
+
+
+def random_permutation(collection: List[_T], random: Random = Random()) -> List[_T]:
+    """
+    Generates a random permutation of the given collection.
+
+    :param collection:
+                The collection to generate a permutation of.
+    :param random:
+                An optional source of randomness.
+    :return:
+                A random permutation of the collection.
+    """
+    return random_subset(collection, len(collection), random, True)
 
 
 def calculate_schedule(ratios: Tuple[int]) -> List[int]:

@@ -3,6 +3,7 @@ from random import Random
 from typing import List
 
 from ._Scheduler import Scheduler
+from .._math import random_permutation
 from .._types import Dataset
 from .._util import per_label
 
@@ -23,7 +24,12 @@ class UniformScheduler(Scheduler):
 
         while len(unselected) > 0:
             to_remove = set()
-            for label, label_set in unselected.items():
+
+            unselected_labels = list(unselected.keys())
+            unselected_labels = random_permutation(unselected_labels, self._random)
+
+            for label in unselected_labels:
+                label_set = unselected[label]
                 selectable = len(label_set)
                 selected_index = self._random.randrange(selectable)
                 result.append(label_set[selected_index])
