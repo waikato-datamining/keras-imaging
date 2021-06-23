@@ -6,7 +6,7 @@ from random import Random
 from tensorflow import keras
 
 from sample import *
-from sample.splitters import RandomSplitter
+from sample.splitters import RandomSplitter, TopNSplitter
 
 INIT_LR = 1e-4
 BS = 5
@@ -28,19 +28,16 @@ holdout_dataset = load_dataset("holdout.txt")
 
 holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, False, BS, SEED)
 
+splitter = TopNSplitter(50)
+
 iteration = 0
+iteration_dataset, remaining_dataset = splitter(source_dataset)
 while True:
-    subset_size = (iteration + 1) * len(label_indices)
-
-    if subset_size > len(source_dataset):
-        break
-
     print(f"ITERATION {iteration}")
 
-    validation_size = max(int(subset_size * VALIDATION_PERCENT), 1)
+    validation_size = max(int(len(iteration_dataset) * VALIDATION_PERCENT), 1)
 
-    train_dataset = top_n(source_dataset, subset_size)
-    validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(train_dataset)
+    validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(iteration_dataset)
 
     model = ResNet50_for_fine_tuning(len(label_indices))
     opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
@@ -60,5 +57,20 @@ while True:
         predictions[holdout_item] = prediction
 
     write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{iteration}.txt")
+
+    if len(remaining_dataset) == 0:
+        break
+
+    update_dataset, remaining_dataset = splitter(remaining_dataset)
+
+    update_gen = data_flow_from_disk(SOURCE_PATH, update_dataset, label_indices, False, BS, SEED)
+
+    predictions: Predictions = OrderedDict()
+    for update_item, prediction in zip(update_dataset.keys(), model.predict(update_gen)):
+        predictions[update_item] = prediction
+
+    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"update_predictions.{iteration}.txt")
+
+    iteration_dataset = merge(iteration_dataset, update_dataset)
 
     iteration += 1
