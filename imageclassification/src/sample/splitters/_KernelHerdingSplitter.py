@@ -13,7 +13,8 @@ class KernelHerdingSplitter(Splitter):
     """
     TODO
     """
-    def __init__(self, predictions_path: str, count: int):
+    def __init__(self, model:str, predictions_path: str, count: int):
+        self._model = model
         self._predictions = load_predictions(predictions_path)
         self._count = count
 
@@ -76,4 +77,4 @@ class KernelHerdingSplitter(Splitter):
         return selected_set, unselected_set
 
     def __str__(self) -> str:
-        return f"kh-{self._count}"
+        return f"kh-{self._model}-{self._count}"

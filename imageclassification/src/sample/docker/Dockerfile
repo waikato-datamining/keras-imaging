@@ -35,4 +35,4 @@ WORKDIR /source/splits
 
 ENTRYPOINT ["../venv/bin/python", "../keras-imaging/imageclassification/src/sample/fine_tune.py", "../dataset.txt"]
 
-CMD ["50"]
+CMD ["50", "resnet50"]

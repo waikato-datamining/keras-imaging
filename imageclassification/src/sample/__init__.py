@@ -1,6 +1,6 @@
 from ._keras import (
-    dataset_predictions_ResNet50,
-    ResNet50_for_fine_tuning,
+    dataset_predictions,
+    model_for_fine_tuning,
     data_flow_from_disk
 )
 from ._kernel import Kernel, CachedKernel, RBFKernel, RBFKernel2

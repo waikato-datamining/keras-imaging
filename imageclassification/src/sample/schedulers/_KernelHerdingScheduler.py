@@ -9,13 +9,14 @@ class KernelHerdingScheduler(Scheduler):
     """
     TODO
     """
-    def __init__(self, predictions_path: str):
+    def __init__(self, model: str, predictions_path: str):
+        self._model = model
         self._predictions_path = predictions_path
 
     def __call__(self, dataset: Dataset) -> List[str]:
         return list(
-            KernelHerdingSplitter(self._predictions_path, len(dataset))(dataset)[0].keys()
+            KernelHerdingSplitter(self._model, self._predictions_path, len(dataset))(dataset)[0].keys()
         )
 
     def __str__(self) -> str:
-        return "kh"
+        return f"kh-{self._model}"

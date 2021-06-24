@@ -18,6 +18,8 @@ RANDOM = Random(SEED)
 
 SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
 
+MODEL = sys.argv[3]
+
 source_dataset = load_dataset("schedule.txt")
 
 label_indices = label_indices(load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT)))
@@ -26,7 +28,7 @@ PREDICTIONS_FILE_HEADER = predictions_file_header(label_indices)
 
 holdout_dataset = load_dataset("holdout.txt")
 
-holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, False, BS, SEED)
+holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, False, BS, SEED, MODEL)
 
 splitter = TopNSplitter(50)
 
@@ -39,12 +41,12 @@ while True:
 
     validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(iteration_dataset)
 
-    model = ResNet50_for_fine_tuning(len(label_indices))
+    model = model_for_fine_tuning(MODEL, len(label_indices))
     opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
     model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
-    train_gen = data_flow_from_disk(SOURCE_PATH, train_dataset, label_indices, True, BS, SEED)
-    val_gen = data_flow_from_disk(SOURCE_PATH, validation_dataset, label_indices, False, BS, SEED)
+    train_gen = data_flow_from_disk(SOURCE_PATH, train_dataset, label_indices, True, BS, SEED, MODEL)
+    val_gen = data_flow_from_disk(SOURCE_PATH, validation_dataset, label_indices, False, BS, SEED, MODEL)
 
     model.fit(
         train_gen,
@@ -63,7 +65,7 @@ while True:
 
     update_dataset, remaining_dataset = splitter(remaining_dataset)
 
-    update_gen = data_flow_from_disk(SOURCE_PATH, update_dataset, label_indices, False, BS, SEED)
+    update_gen = data_flow_from_disk(SOURCE_PATH, update_dataset, label_indices, False, BS, SEED, MODEL)
 
     predictions: Predictions = OrderedDict()
     for update_item, prediction in zip(update_dataset.keys(), model.predict(update_gen)):

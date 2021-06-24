@@ -10,6 +10,7 @@ RANDOM = Random(42)
 HOLDOUT_PERCENT = 0.15
 
 SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
+MODEL = sys.argv[2]
 
 print(f"SOURCE PATH = {SOURCE_PATH}")
 print(f"SOURCE DATASET = {SOURCE_DATASET}{SOURCE_EXT}")
@@ -32,7 +33,7 @@ HOLDOUT_SPLITTER: Splitter = StratifiedSplitter(HOLDOUT_PERCENT, LABELS, RANDOM)
 #TRAIN_SCHEDULER: Scheduler = RandomScheduler(RANDOM)
 #TRAIN_SCHEDULER: Scheduler = UniformScheduler(RANDOM)
 #TRAIN_SCHEDULER: Scheduler = StratifiedScheduler(RANDOM)
-TRAIN_SCHEDULER: Scheduler = KernelHerdingScheduler(os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.predictions.txt"))
+TRAIN_SCHEDULER: Scheduler = KernelHerdingScheduler(MODEL, os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.{MODEL}-predictions.txt"))
 
 DEST_PATH = os.path.join(SOURCE_PATH, f"{SOURCE_DATASET}.{HOLDOUT_SPLITTER}.{TRAIN_SCHEDULER}.splits")
 os.makedirs(DEST_PATH, exist_ok=True)

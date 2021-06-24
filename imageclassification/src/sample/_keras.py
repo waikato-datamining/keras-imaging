@@ -13,10 +13,18 @@ def data_flow_from_disk(
         label_indices: LabelIndices,
         shuffle: bool,
         batch_size: int,
-        seed: int
+        seed: int,
+        model: str
 ):
+    if model == "resnet50" or model == "resnet152":
+        preprocessing_function = keras.applications.resnet.preprocess_input
+    elif model == "mobilenet":
+        preprocessing_function = keras.applications.mobilenet.preprocess_input
+    else:
+        raise Exception(f"Unknown model {model}")
+
     gen = keras.preprocessing.image.ImageDataGenerator(
-        preprocessing_function=keras.applications.resnet.preprocess_input
+        preprocessing_function=preprocessing_function
     )
 
     dataframe = DataFrame(
@@ -38,8 +46,49 @@ def data_flow_from_disk(
     )
 
 
+def model_for_fine_tuning(model: str, num_labels: int) -> keras.models.Model:
+    if model == "resnet50":
+        return ResNet50_for_fine_tuning(num_labels)
+    elif model == "resnet152":
+        return ResNet152_for_fine_tuning(num_labels)
+    elif model == "mobilenet":
+        return MobileNet_for_fine_tuning(num_labels)
+    else:
+        raise Exception(f"Unknown model {model}")
+
+
 def ResNet50_for_fine_tuning(num_labels: int) -> keras.models.Model:
     base_model = keras.applications.ResNet50(include_top=False)
+    base_model.trainable = False
+
+    inputs = keras.Input(shape=(224, 224, 3))
+    fine_tuning_model = base_model(inputs, training=False)
+    fine_tuning_model = keras.layers.AveragePooling2D(pool_size=(7, 7))(fine_tuning_model)
+    fine_tuning_model = keras.layers.Flatten(name="flatten")(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dense(256, activation="relu")(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dropout(0.5)(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dense(num_labels, activation="softmax")(fine_tuning_model)
+
+    return keras.models.Model(inputs=inputs, outputs=fine_tuning_model)
+
+
+def ResNet152_for_fine_tuning(num_labels: int) -> keras.models.Model:
+    base_model = keras.applications.ResNet152(include_top=False)
+    base_model.trainable = False
+
+    inputs = keras.Input(shape=(224, 224, 3))
+    fine_tuning_model = base_model(inputs, training=False)
+    fine_tuning_model = keras.layers.AveragePooling2D(pool_size=(7, 7))(fine_tuning_model)
+    fine_tuning_model = keras.layers.Flatten(name="flatten")(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dense(256, activation="relu")(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dropout(0.5)(fine_tuning_model)
+    fine_tuning_model = keras.layers.Dense(num_labels, activation="softmax")(fine_tuning_model)
+
+    return keras.models.Model(inputs=inputs, outputs=fine_tuning_model)
+
+
+def MobileNet_for_fine_tuning(num_labels: int) -> keras.models.Model:
+    base_model = keras.applications.MobileNet(include_top=False)
     base_model.trainable = False
 
     inputs = keras.Input(shape=(224, 224, 3))
@@ -62,8 +111,16 @@ class MyLogger(keras.callbacks.Callback):
         print(f"predicted {(batch + 1) * self._batch_size} of {self._num_items}")
 
 
-def dataset_predictions_ResNet50(path: str, dataset: Dataset) -> Predictions:
-    model = keras.applications.ResNet50()
+def dataset_predictions(model_name: str, path: str, dataset: Dataset) -> Predictions:
+    if model_name == "resnet50":
+        model = keras.applications.ResNet50()
+    elif model_name == "resnet152":
+        model = keras.applications.ResNet152()
+    elif model_name == "mobilenet":
+        model = keras.applications.MobileNet()
+    else:
+        raise Exception(f"Unknown model {model_name}")
+
     model = keras.models.Model(model.input, model.layers[-2].output)
     dataset_size = len(dataset)
 
@@ -74,7 +131,8 @@ def dataset_predictions_ResNet50(path: str, dataset: Dataset) -> Predictions:
             label_indices(dataset),  # Doesn't actually matter
             False,
             5,
-            0
+            0,
+            model_name
         ),
         callbacks=[MyLogger(5, dataset_size)]
     )
