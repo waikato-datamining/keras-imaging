@@ -58,7 +58,7 @@ while True:
     for holdout_item, prediction in zip(holdout_dataset.keys(), model.predict(holdout_gen)):
         predictions[holdout_item] = prediction
 
-    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{iteration}.txt")
+    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{MODEL}.{iteration}.txt")
 
     if len(remaining_dataset) == 0:
         break
@@ -71,7 +71,7 @@ while True:
     for update_item, prediction in zip(update_dataset.keys(), model.predict(update_gen)):
         predictions[update_item] = prediction
 
-    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"update_predictions.{iteration}.txt")
+    write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"update_predictions.{MODEL}.{iteration}.txt")
 
     iteration_dataset = merge(iteration_dataset, update_dataset)
 
