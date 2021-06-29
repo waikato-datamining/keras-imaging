@@ -12,6 +12,8 @@ BS = 5
 NUM_EPOCHS = int(sys.argv[2])
 SEED = 42
 VALIDATION_PERCENT = 0.15
+GPU = sys.argv[5]
+
 
 RANDOM = Random(SEED)
 SHUFFLE_RANDOM = Random(SEED)
@@ -22,18 +24,20 @@ RELATIVE_DIR = os.path.join(SOURCE_PATH, sys.argv[4])
 
 MODEL = sys.argv[3]
 
+CWD = os.getcwd()
+
 source_dataset = load_dataset("schedule.txt")
 
 label_indices = label_indices(load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT)))
 
-with open("labels.txt", "w") as file:
+os.makedirs(MODEL)
+
+MODEL_DIR = os.path.join(CWD, MODEL)
+
+with open(f"{MODEL_DIR}/labels.txt", "w") as file:
     file.write(",".join(label_indices.keys()))
 
-PREDICTIONS_FILE_HEADER = predictions_file_header(label_indices)
-
 holdout_dataset = load_dataset("holdout.txt")
-
-holdout_gen = data_flow_from_disk(SOURCE_PATH, holdout_dataset, label_indices, False, BS, SEED, MODEL)
 
 splitter = TopNSplitter(50)
 
@@ -42,29 +46,31 @@ iteration_dataset, remaining_dataset = splitter(source_dataset)
 while True:
     print(f"ITERATION {iteration}")
 
+    ITERATION_DIR = os.path.join(MODEL_DIR, str(iteration))
+
+    os.makedirs(ITERATION_DIR)
+
     validation_size = max(int(len(iteration_dataset) * VALIDATION_PERCENT), 1)
 
     validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(iteration_dataset)
 
     train_dataset = shuffle_dataset(train_dataset, SHUFFLE_RANDOM)
 
-    write_dataset(change_path(validation_dataset, RELATIVE_DIR), "validation.txt")
-    write_dataset(change_path(train_dataset, RELATIVE_DIR), "train.txt")
+    write_dataset(change_path(validation_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/validation.txt")
+    write_dataset(change_path(train_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/train.txt")
 
-    os.makedirs("data")
-    os.makedirs("data/val")
-    os.makedirs("data/train")
-    os.makedirs("output")
-    #os.makedirs("cache")
+    os.makedirs(f"{ITERATION_DIR}/validation")
+    os.makedirs(f"{ITERATION_DIR}/train")
+    os.makedirs(f"{ITERATION_DIR}/output")
 
     wai_annotations_main([
         "convert",
         "from-voc-od",
         "-I",
-        "validation.txt",
+        f"{ITERATION_DIR}/validation.txt",
         "to-coco-od",
         "-o",
-        "data/val/annotations.json",
+        f"{ITERATION_DIR}/validation/annotations.json",
         "--pretty",
         "--categories",
         *label_indices.keys()
@@ -74,10 +80,10 @@ while True:
         "convert",
         "from-voc-od",
         "-I",
-        "train.txt",
+        f"{ITERATION_DIR}/train.txt",
         "to-coco-od",
         "-o",
-        "data/train/annotations.json",
+        f"{ITERATION_DIR}/train/annotations.json",
         "--pretty",
         "--categories",
         *label_indices.keys()
@@ -85,35 +91,32 @@ while True:
 
     os.system(
         f"docker run "
-        f"--gpus=all "
+        f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-e USER=$USER "
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
-        f"-e MMDET_OUTPUT=/output "
-        f"-v labels.txt:/labels.txt "
-        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
-        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
-        f"-v {os.path.join(os.getcwd(), 'data')}:/data "
-        f"-v {os.path.join(os.getcwd(), 'output')}:/output "
-        #f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
+        f"-e MMDET_OUTPUT=/data/output "
+        f"-v {MODEL_DIR}/labels.txt:/labels.txt "
+        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
+        f"-v {ITERATION_DIR}:/data "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_train /setup.py"
     )
 
-    write_dataset(change_path(holdout_dataset, RELATIVE_DIR), "h2.txt")
+    write_dataset(change_path(holdout_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/holdout.txt")
 
-    os.makedirs("predictions")
-    os.makedirs("predictions/in")
-    os.makedirs("predictions/out")
+    os.makedirs(f"{ITERATION_DIR}/predictions")
+    os.makedirs(f"{ITERATION_DIR}/predictions_in")
 
     wai_annotations_main([
         "convert",
         "from-voc-od",
         "-I",
-        "h2.txt",
+        f"{ITERATION_DIR}/holdout.txt",
         "to-coco-od",
         "-o",
-        "predictions/in/annotations.json",
+        f"{ITERATION_DIR}/predictions_in/annotations.json",
         "--pretty",
         "--categories",
         *label_indices.keys()
@@ -121,25 +124,24 @@ while True:
 
     os.system(
         f"docker run "
-        f"--gpus=all "
+        f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-e USER=$USER "
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
-        f"-e MMDET_OUTPUT=/output "
-        f"-v {os.path.join(os.getcwd(), 'labels.txt')}:/labels.txt "
-        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
-        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
-        f"-v {os.path.join(os.getcwd(), 'output')}:/output "
-        f"-v {os.path.join(os.getcwd(), 'predictions')}:/predictions "
-        #f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
+        f"-e MMDET_OUTPUT=/data/output "
+        f"-v {MODEL_DIR}/labels.txt:/labels.txt "
+        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
+        f"-v {ITERATION_DIR}:/data "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_predict "
-        f"--checkpoint /output/latest.pth "
+        f"--checkpoint /data/output/latest.pth "
         f"--config /setup.py "
-        f"--prediction_in /predictions/in/ "
-        f"--prediction_out /predictions/out/ "
+        f"--prediction_in /data/predictions_in/ "
+        f"--prediction_out /data/predictions/ "
         f"--labels /labels.txt "
-        f"--score 0"
+        f"--score 0 "
+        f"--delete_input"
     )
 
     #model = model_for_fine_tuning(MODEL, len(label_indices))
