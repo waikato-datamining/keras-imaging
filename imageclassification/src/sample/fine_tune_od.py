@@ -92,8 +92,8 @@ while True:
         f"-e USER=$USER "
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/output "
-        f"-e MMDET_SETUP=/setup.py "
-        f"-e MMDET_DATA=/data "
+        #f"-e MMDET_SETUP=/setup.py "
+        #f"-e MMDET_DATA=/data "
         f"-v labels.txt:/labels.txt "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
@@ -101,7 +101,7 @@ while True:
         f"-v {os.path.join(os.getcwd(), 'output')}:/output "
         f"-v {os.path.join(os.getcwd(), 'predictions')}:/predictions "
         f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
-        f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01 "
+        f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_train /setup.py"
     )
 
