@@ -51,12 +51,11 @@ while True:
     write_dataset(change_path(validation_dataset, RELATIVE_DIR), "validation.txt")
     write_dataset(change_path(train_dataset, RELATIVE_DIR), "train.txt")
 
-    os.makedirs("models")
     os.makedirs("data")
     os.makedirs("data/val")
     os.makedirs("data/train")
     os.makedirs("output")
-    os.makedirs("cache")
+    #os.makedirs("cache")
 
     wai_annotations_main([
         "convert",
@@ -96,7 +95,7 @@ while True:
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
         f"-v {os.path.join(os.getcwd(), 'data')}:/data "
         f"-v {os.path.join(os.getcwd(), 'output')}:/output "
-        f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
+        #f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_train /setup.py"
     )
@@ -132,7 +131,7 @@ while True:
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
         f"-v {os.path.join(os.getcwd(), 'output')}:/output "
         f"-v {os.path.join(os.getcwd(), 'predictions')}:/predictions "
-        f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
+        #f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_predict "
         f"--checkpoint /output/latest.pth "
@@ -162,7 +161,6 @@ while True:
 
     #write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{MODEL}.{iteration}.txt")
 
-    #os.makedirs("models")
     #os.makedirs("data")
     #os.makedirs("output")
     #os.makedirs("predictions")
