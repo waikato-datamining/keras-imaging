@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 from random import Random
 
@@ -94,7 +95,7 @@ while True:
         *label_indices.keys()
     ])
 
-    os.system(
+    run_command(
         f"docker run "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
@@ -127,7 +128,7 @@ while True:
         *label_indices.keys()
     ])
 
-    os.system(
+    run_command(
         f"docker run "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
@@ -172,7 +173,7 @@ while True:
         *label_indices.keys()
     ])
 
-    os.system(
+    run_command(
         f"docker run "
         f"--gpus device={GPU} "
         f"--shm-size 8G "

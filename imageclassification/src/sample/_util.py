@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import os
 from random import Random
+import subprocess
 from typing import Iterable, Tuple, OrderedDict as ODict
 
 from ._math import random_permutation
@@ -116,3 +117,17 @@ def rm_dir(path: str):
         for dirname in dirnames:
             os.rmdir(os.path.join(dirpath, dirname))
     os.rmdir(path)
+
+
+def run_command(cmd: str):
+    """
+    TODO
+    """
+    with subprocess.Popen(cmd, shell=True) as process:
+        while True:
+            try:
+                process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                continue
+            else:
+                process.terminate()
