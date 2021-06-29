@@ -34,6 +34,11 @@ os.makedirs(MODEL)
 
 MODEL_DIR = os.path.join(CWD, MODEL)
 
+with open(f"{MODEL_DIR}/setup.py", "w") as file:
+    file.write(f"NUM_EPOCHS = {NUM_EPOCHS}\n")
+    with open(os.path.join(CWD, '..', f'setup_{MODEL}.py')) as source_file:
+        file.writelines(source_file.readlines())
+
 with open(f"{MODEL_DIR}/labels.txt", "w") as file:
     file.write(",".join(label_indices.keys()))
 
@@ -97,7 +102,7 @@ while True:
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/data/output "
         f"-v {MODEL_DIR}/labels.txt:/labels.txt "
-        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {MODEL_DIR}/setup.py:/setup.py "
         f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
         f"-v {ITERATION_DIR}:/data "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
@@ -130,7 +135,7 @@ while True:
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/data/output "
         f"-v {MODEL_DIR}/labels.txt:/labels.txt "
-        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {MODEL_DIR}/setup.py:/setup.py "
         f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
         f"-v {ITERATION_DIR}:/data "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
@@ -175,7 +180,7 @@ while True:
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/data/output "
         f"-v {MODEL_DIR}/labels.txt:/labels.txt "
-        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {MODEL_DIR}/setup.py:/setup.py "
         f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
         f"-v {ITERATION_DIR}:/data "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
