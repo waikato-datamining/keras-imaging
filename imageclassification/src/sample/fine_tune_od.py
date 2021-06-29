@@ -53,11 +53,10 @@ while True:
 
     os.makedirs("models")
     os.makedirs("data")
-    os.makedirs("output")
-    os.makedirs("predictions")
-    os.makedirs("cache")
     os.makedirs("data/val")
     os.makedirs("data/train")
+    os.makedirs("output")
+    os.makedirs("cache")
 
     wai_annotations_main([
         "convert",
@@ -92,17 +91,56 @@ while True:
         f"-e USER=$USER "
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/output "
-        #f"-e MMDET_SETUP=/setup.py "
-        #f"-e MMDET_DATA=/data "
         f"-v labels.txt:/labels.txt "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
         f"-v {os.path.join(os.getcwd(), 'data')}:/data "
         f"-v {os.path.join(os.getcwd(), 'output')}:/output "
-        f"-v {os.path.join(os.getcwd(), 'predictions')}:/predictions "
         f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
         f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
         f"mmdet_train /setup.py"
+    )
+
+    write_dataset(change_path(holdout_dataset, RELATIVE_DIR), "h2.txt")
+
+    os.makedirs("predictions")
+    os.makedirs("predictions/in")
+    os.makedirs("predictions/out")
+
+    wai_annotations_main([
+        "convert",
+        "from-voc-od",
+        "-I",
+        "h2.txt",
+        "to-coco-od",
+        "-o",
+        "predictions/in/annotations.json",
+        "--pretty",
+        "--categories",
+        *label_indices.keys()
+    ])
+
+    os.system(
+        f"docker run "
+        f"--gpus=all "
+        f"--shm-size 8G "
+        f"-e USER=$USER "
+        f"-e MMDET_CLASSES=\"'/labels.txt'\" "
+        f"-e MMDET_OUTPUT=/output "
+        f"-v labels.txt:/labels.txt "
+        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
+        f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
+        f"-v {os.path.join(os.getcwd(), 'output')}:/output "
+        f"-v {os.path.join(os.getcwd(), 'predictions')}:/predictions "
+        f"-v {os.path.join(os.getcwd(), 'cache')}:/.cache "
+        f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
+        f"mmdet_predict "
+        f"--checkpoint /output/latest.pth "
+        f"--config /setup.py "
+        f"--prediction_in /predictions/in/ "
+        f"--prediction_out /predictions/out/ "
+        f"--labels /labels.txt "
+        f"--score 0"
     )
 
     #model = model_for_fine_tuning(MODEL, len(label_indices))
