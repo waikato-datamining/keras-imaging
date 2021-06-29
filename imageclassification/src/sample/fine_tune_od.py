@@ -144,47 +144,61 @@ while True:
         f"--delete_input"
     )
 
-    #model = model_for_fine_tuning(MODEL, len(label_indices))
-    #opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
-    #model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-
-    #train_gen = data_flow_from_disk(SOURCE_PATH, train_dataset, label_indices, True, BS, SEED, MODEL)
-    #val_gen = data_flow_from_disk(SOURCE_PATH, validation_dataset, label_indices, False, BS, SEED, MODEL)
-
-    #model.fit(
-    #    train_gen,
-    #    validation_data=val_gen,
-    #    epochs=NUM_EPOCHS
-    #)
-
-    #predictions: Predictions = OrderedDict()
-    #for holdout_item, prediction in zip(holdout_dataset.keys(), model.predict(holdout_gen)):
-    #    predictions[holdout_item] = prediction
-
-    #write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"predictions.{MODEL}.{iteration}.txt")
-
-    #os.makedirs("data")
-    #os.makedirs("output")
-    #os.makedirs("predictions")
-
-    #os.remove("train.txt")
-    #os.remove("validation.txt")
-    #rm_dir("data")
-
-    break
-
     if len(remaining_dataset) == 0:
         break
 
     update_dataset, remaining_dataset = splitter(remaining_dataset)
 
-    #update_gen = data_flow_from_disk(SOURCE_PATH, update_dataset, label_indices, False, BS, SEED, MODEL)
+    write_dataset(change_path(update_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/update.txt")
 
-    #predictions: Predictions = OrderedDict()
-    #for update_item, prediction in zip(update_dataset.keys(), model.predict(update_gen)):
-    #    predictions[update_item] = prediction
+    os.makedirs(f"{ITERATION_DIR}/update_predictions")
+    os.makedirs(f"{ITERATION_DIR}/update_predictions_in")
 
-    #write_predictions(predictions, PREDICTIONS_FILE_HEADER, f"update_predictions.{MODEL}.{iteration}.txt")
+    wai_annotations_main([
+        "convert",
+        "from-voc-od",
+        "-I",
+        f"{ITERATION_DIR}/update.txt",
+        "to-coco-od",
+        "-o",
+        f"{ITERATION_DIR}/update_predictions_in/annotations.json",
+        "--pretty",
+        "--categories",
+        *label_indices.keys()
+    ])
+
+    os.system(
+        f"docker run "
+        f"--gpus device={GPU} "
+        f"--shm-size 8G "
+        f"-e USER=$USER "
+        f"-e MMDET_CLASSES=\"'/labels.txt'\" "
+        f"-e MMDET_OUTPUT=/data/output "
+        f"-v {MODEL_DIR}/labels.txt:/labels.txt "
+        f"-v {os.path.join(CWD, '..', f'setup_{MODEL}.py')}:/setup.py "
+        f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
+        f"-v {ITERATION_DIR}:/data "
+        f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
+        f"mmdet_predict "
+        f"--checkpoint /data/output/latest.pth "
+        f"--config /setup.py "
+        f"--prediction_in /data/update_predictions_in/ "
+        f"--prediction_out /data/update_predictions/ "
+        f"--labels /labels.txt "
+        f"--score 0 "
+        f"--delete_input"
+    )
+
+    # Clean up
+    rm_dir(f"{ITERATION_DIR}/output")
+    rm_dir(f"{ITERATION_DIR}/predictions_in")
+    rm_dir(f"{ITERATION_DIR}/update_predictions_in")
+    rm_dir(f"{ITERATION_DIR}/train")
+    rm_dir(f"{ITERATION_DIR}/val")
+    os.remove(f"{ITERATION_DIR}/validation.txt")
+    os.remove(f"{ITERATION_DIR}/train.txt")
+    os.remove(f"{ITERATION_DIR}/update.txt")
+    os.remove(f"{ITERATION_DIR}/holdout.txt")
 
     iteration_dataset = merge(iteration_dataset, update_dataset)
 
