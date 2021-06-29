@@ -139,7 +139,7 @@ while True:
         f"--config /setup.py "
         f"--prediction_in /predictions/in/ "
         f"--prediction_out /predictions/out/ "
-        f"--labels /labels.txt "
+        f"--labels \"'/labels.txt'\" "
         f"--score 0"
     )
 
