@@ -67,7 +67,9 @@ while True:
         "to-coco-od",
         "-o",
         "data/val/annotations.json",
-        "--pretty"
+        "--pretty",
+        "--categories",
+        *label_indices.keys()
     ])
 
     wai_annotations_main([
@@ -78,7 +80,9 @@ while True:
         "to-coco-od",
         "-o",
         "data/train/annotations.json",
-        "--pretty"
+        "--pretty",
+        "--categories",
+        *label_indices.keys()
     ])
 
     os.system(
