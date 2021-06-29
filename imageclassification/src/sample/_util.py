@@ -1,7 +1,9 @@
 from collections import OrderedDict
 import os
+from random import Random
 from typing import Iterable, Tuple, OrderedDict as ODict
 
+from ._math import random_permutation
 from ._types import Dataset, LabelIndices
 
 
@@ -75,3 +77,42 @@ def top_n(dataset: Dataset, n: int) -> Dataset:
             break
         result[filename] = dataset[filename]
     return result
+
+
+def change_path(
+        dataset: Dataset,
+        path: str
+) -> Dataset:
+    """
+    TODO
+    """
+    result = OrderedDict()
+    for filename, label in dataset.items():
+        _, file = os.path.split(filename)
+        file, ext = os.path.splitext(file)
+        changed_filename = os.path.join(path, f"{file}.xml")
+        result[changed_filename] = dataset[filename]
+    return result
+
+
+def shuffle_dataset(dataset: Dataset, random: Random = Random()) -> Dataset:
+    """
+    TODO
+    """
+    order = random_permutation(list(dataset.keys()), random)
+    result = OrderedDict()
+    for filename in order:
+        result[filename] = dataset[filename]
+    return result
+
+
+def rm_dir(path: str):
+    """
+    TODO
+    """
+    for dirpath, dirnames, filenames in os.walk(path, False, followlinks=False):
+        for filename in filenames:
+            os.remove(os.path.join(dirpath, filename))
+        for dirname in dirnames:
+            os.rmdir(os.path.join(dirpath, dirname))
+    os.rmdir(path)

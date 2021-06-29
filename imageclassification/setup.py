@@ -40,6 +40,8 @@ setup(
         "keras",
         "pillow",
         "matplotlib",
+        "wai.annotations.voc",
+        "wai.annotations.coco"
     ],
     include_package_data=True
 )
