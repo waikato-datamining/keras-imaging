@@ -127,7 +127,7 @@ while True:
         f"-e USER=$USER "
         f"-e MMDET_CLASSES=\"'/labels.txt'\" "
         f"-e MMDET_OUTPUT=/output "
-        f"-v labels.txt:/labels.txt "
+        f"-v {os.path.join(os.getcwd(), 'labels.txt')}:/labels.txt "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x.py')}:/setup.py "
         f"-v {os.path.join(os.getcwd(), '..', 'faster_rcnn_r101_fpn_1x_20181129-d1468807.pth')}:/model.pth "
         f"-v {os.path.join(os.getcwd(), 'output')}:/output "
