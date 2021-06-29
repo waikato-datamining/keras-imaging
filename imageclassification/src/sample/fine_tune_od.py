@@ -59,7 +59,7 @@ while True:
     write_dataset(change_path(validation_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/validation.txt")
     write_dataset(change_path(train_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/train.txt")
 
-    os.makedirs(f"{ITERATION_DIR}/validation")
+    os.makedirs(f"{ITERATION_DIR}/val")
     os.makedirs(f"{ITERATION_DIR}/train")
     os.makedirs(f"{ITERATION_DIR}/output")
 
@@ -70,7 +70,7 @@ while True:
         f"{ITERATION_DIR}/validation.txt",
         "to-coco-od",
         "-o",
-        f"{ITERATION_DIR}/validation/annotations.json",
+        f"{ITERATION_DIR}/val/annotations.json",
         "--pretty",
         "--categories",
         *label_indices.keys()
