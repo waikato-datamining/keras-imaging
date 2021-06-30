@@ -129,5 +129,5 @@ def run_command(cmd: str):
                 process.communicate(timeout=5)
             except subprocess.TimeoutExpired:
                 continue
-            else:
+            except:
                 process.terminate()
