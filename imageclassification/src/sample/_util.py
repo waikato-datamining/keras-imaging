@@ -132,3 +132,4 @@ def run_command(cmd: str):
                     continue
         except KeyboardInterrupt:
             process.kill()
+            raise
