@@ -125,11 +125,7 @@ def run_command(cmd: str):
     """
     with subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE) as process:
         try:
-            while True:
-                try:
-                    process.communicate(timeout=5)
-                except subprocess.TimeoutExpired:
-                    continue
+            process.wait()
         except KeyboardInterrupt:
             process.kill()
             raise
