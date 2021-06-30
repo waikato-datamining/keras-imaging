@@ -123,7 +123,7 @@ def run_command(cmd: str):
     """
     TODO
     """
-    with subprocess.Popen(cmd, shell=True) as process:
+    with subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE) as process:
         try:
             while True:
                 try:
