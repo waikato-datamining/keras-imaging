@@ -124,10 +124,11 @@ def run_command(cmd: str):
     TODO
     """
     with subprocess.Popen(cmd, shell=True) as process:
-        while True:
-            try:
-                process.communicate(timeout=5)
-            except subprocess.TimeoutExpired:
-                continue
-            except:
-                process.terminate()
+        try:
+            while True:
+                try:
+                    process.communicate(timeout=5)
+                except subprocess.TimeoutExpired:
+                    continue
+        except KeyboardInterrupt:
+            process.kill()
