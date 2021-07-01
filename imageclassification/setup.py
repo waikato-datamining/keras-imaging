@@ -37,7 +37,9 @@ setup(
     author='Peter Reutemann',
     author_email='fracpete@waikato.ac.nz',
     install_requires=[
+        "tensorflow",
         "keras",
+        "pandas",
         "pillow",
         "matplotlib",
         "wai.annotations.voc",
