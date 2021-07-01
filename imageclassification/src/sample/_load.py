@@ -41,3 +41,21 @@ def load_predictions(filename: str) -> Predictions:
             result[filename] = np.array(probs)
 
     return result
+
+
+def load_rois_predictions(dir: str, dataset: Dataset, num_labels: int) -> Predictions:
+    """
+    TODO
+    """
+    result = OrderedDict()
+    for filename in dataset.keys():
+        probabilities = np.zeros((num_labels,))
+        rois_filename = os.path.basename(filename)[:-4] + "-rois.csv"
+        with open(os.path.join(dir, rois_filename), "r") as file:
+            file.readline()
+            for line in file.readlines():
+                label, _, score = line.strip().split(",")[-3:]
+                index = int(label)
+                probabilities[index] = max(probabilities[index], float(score))
+        result[filename] = probabilities
+    return result

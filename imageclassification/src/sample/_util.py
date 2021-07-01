@@ -2,7 +2,9 @@ from collections import OrderedDict
 import os
 from random import Random
 import subprocess
-from typing import Iterable, Tuple, OrderedDict as ODict
+from typing import Iterable, List, Tuple, OrderedDict as ODict
+
+import numpy as np
 
 from ._math import random_permutation
 from ._types import Dataset, LabelIndices
@@ -129,3 +131,17 @@ def run_command(cmd: str):
         except KeyboardInterrupt:
             process.kill()
             raise
+
+
+def coerce_incorrect(num_labels: int, y_true: int, y_score: np.ndarray) -> np.ndarray:
+    """
+    TODO
+    """
+    if not np.all(y_score == 0.0):
+        return y_score
+
+    y_false = (y_true + 1) % num_labels
+
+    result = y_score.copy()
+    result[y_false] = 1.0
+    return result
