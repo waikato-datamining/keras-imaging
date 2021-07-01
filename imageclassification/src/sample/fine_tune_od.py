@@ -36,7 +36,7 @@ MODEL_DIR = os.path.join(CWD, MODEL)
 
 with open(f"{MODEL_DIR}/setup.py", "w") as file:
     file.write(f"NUM_EPOCHS = {NUM_EPOCHS}\n")
-    with open(os.path.join(CWD, '..', f'setup_{MODEL}.py')) as source_file:
+    with open(os.path.join(CWD, '..', f'setup_{MODEL}_{SOURCE_DATASET}.py')) as source_file:
         file.writelines(source_file.readlines())
 
 with open(f"{MODEL_DIR}/labels.txt", "w") as file:
