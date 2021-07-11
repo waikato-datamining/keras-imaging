@@ -20,6 +20,8 @@ SOURCE_PATH, SOURCE_DATASET, SOURCE_EXT = split_arg(sys.argv[1])
 
 MODEL = sys.argv[3]
 
+WEIGHTS = sys.argv[4] if len(sys.argv) == 5 else "imagenet"
+
 source_dataset = load_dataset("schedule.txt")
 
 label_indices = label_indices(load_dataset(os.path.join(SOURCE_PATH, SOURCE_DATASET + SOURCE_EXT)))
@@ -41,7 +43,7 @@ while True:
 
     validation_dataset, train_dataset = RandomSplitter(validation_size, RANDOM)(iteration_dataset)
 
-    model = model_for_fine_tuning(MODEL, len(label_indices))
+    model = model_for_fine_tuning(MODEL, len(label_indices), WEIGHTS)
     opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
     model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 

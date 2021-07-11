@@ -46,19 +46,19 @@ def data_flow_from_disk(
     )
 
 
-def model_for_fine_tuning(model: str, num_labels: int) -> keras.models.Model:
+def model_for_fine_tuning(model: str, num_labels: int, weights: str) -> keras.models.Model:
     if model == "resnet50":
-        return ResNet50_for_fine_tuning(num_labels)
+        return ResNet50_for_fine_tuning(num_labels, weights)
     elif model == "resnet152":
-        return ResNet152_for_fine_tuning(num_labels)
+        return ResNet152_for_fine_tuning(num_labels, weights)
     elif model == "mobilenet":
-        return MobileNet_for_fine_tuning(num_labels)
+        return MobileNet_for_fine_tuning(num_labels, weights)
     else:
         raise Exception(f"Unknown model {model}")
 
 
-def ResNet50_for_fine_tuning(num_labels: int) -> keras.models.Model:
-    base_model = keras.applications.ResNet50(include_top=False)
+def ResNet50_for_fine_tuning(num_labels: int, weights: str) -> keras.models.Model:
+    base_model = keras.applications.ResNet50(include_top=False, weights=weights)
     base_model.trainable = False
 
     inputs = keras.Input(shape=(224, 224, 3))
@@ -72,8 +72,8 @@ def ResNet50_for_fine_tuning(num_labels: int) -> keras.models.Model:
     return keras.models.Model(inputs=inputs, outputs=fine_tuning_model)
 
 
-def ResNet152_for_fine_tuning(num_labels: int) -> keras.models.Model:
-    base_model = keras.applications.ResNet152(include_top=False)
+def ResNet152_for_fine_tuning(num_labels: int, weights: str) -> keras.models.Model:
+    base_model = keras.applications.ResNet152(include_top=False, weights=weights)
     base_model.trainable = False
 
     inputs = keras.Input(shape=(224, 224, 3))
@@ -87,8 +87,8 @@ def ResNet152_for_fine_tuning(num_labels: int) -> keras.models.Model:
     return keras.models.Model(inputs=inputs, outputs=fine_tuning_model)
 
 
-def MobileNet_for_fine_tuning(num_labels: int) -> keras.models.Model:
-    base_model = keras.applications.MobileNet(include_top=False)
+def MobileNet_for_fine_tuning(num_labels: int, weights: str) -> keras.models.Model:
+    base_model = keras.applications.MobileNet(include_top=False, weights=weights)
     base_model.trainable = False
 
     inputs = keras.Input(shape=(224, 224, 3))
