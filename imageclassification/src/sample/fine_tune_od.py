@@ -7,13 +7,12 @@ from wai.annotations.main import main as wai_annotations_main
 from sample import *
 from sample.splitters import RandomSplitter, TopNSplitter
 
-INIT_LR = 1e-4
 BS = 5
 NUM_EPOCHS = int(sys.argv[2])
 SEED = 42
 VALIDATION_PERCENT = 0.15
 GPU = sys.argv[5]
-
+LR = sys.argv[6]
 
 RANDOM = Random(SEED)
 SHUFFLE_RANDOM = Random(SEED)
@@ -36,6 +35,7 @@ MODEL_DIR = os.path.join(CWD, MODEL)
 
 with open(f"{MODEL_DIR}/setup.py", "w") as file:
     file.write(f"NUM_EPOCHS = {NUM_EPOCHS}\n")
+    file.write(f"LR = {LR}\n")
     with open(os.path.join(CWD, '..', f'setup_{MODEL}_{SOURCE_DATASET}.py')) as source_file:
         file.writelines(source_file.readlines())
 
