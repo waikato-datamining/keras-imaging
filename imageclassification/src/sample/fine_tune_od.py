@@ -12,7 +12,7 @@ NUM_EPOCHS = int(sys.argv[2])
 SEED = 42
 VALIDATION_PERCENT = 0.15
 GPU = sys.argv[5]
-LR = sys.argv[6]
+LR = float(sys.argv[6])
 
 RANDOM = Random(SEED)
 SHUFFLE_RANDOM = Random(SEED)
