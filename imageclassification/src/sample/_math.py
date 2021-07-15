@@ -147,7 +147,7 @@ def subset_number_to_subset(
                     break
                 num_subsets = num_subsets * k // n
                 k -= 1
-            else:
+            elif n != 0:
                 num_subsets = num_subsets * (n - k) // n
 
         return subset
