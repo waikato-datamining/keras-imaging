@@ -158,7 +158,7 @@ def random_subset(
         subset_size: int,
         random: Random = Random(),
         order_matters: bool = False
-) -> Union[List[_T], Set[_T]]:
+) -> List[_T]:
     """
     Generates a random subset of the given collection, of the
     given size.
@@ -179,7 +179,7 @@ def random_subset(
     num_subsets = number_of_subsets(size, subset_size, order_matters)
     subset_number = random.randrange(num_subsets)
     indices = subset_number_to_subset(size, subset_size, subset_number, order_matters)
-    return (list if order_matters else set)(collection[index] for index in indices)
+    return list(collection[index] for index in indices)
 
 
 def number_of_permutations(size: int) -> int:
