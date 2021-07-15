@@ -91,11 +91,18 @@ def change_path(
     """
     result = OrderedDict()
     for filename, label in dataset.items():
-        _, file = os.path.split(filename)
-        file, ext = os.path.splitext(file)
-        changed_filename = os.path.join(path, f"{file}.xml")
+        changed_filename = change_filename(filename, path)
         result[changed_filename] = dataset[filename]
     return result
+
+
+def change_filename(filename: str, path: str) -> str:
+    """
+    TODO
+    """
+    _, file = os.path.split(filename)
+    file, ext = os.path.splitext(file)
+    return os.path.join(path, f"{file}.xml")
 
 
 def shuffle_dataset(dataset: Dataset, random: Random = Random()) -> Dataset:
