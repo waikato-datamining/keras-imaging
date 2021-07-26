@@ -152,3 +152,16 @@ def coerce_incorrect(num_labels: int, y_true: int, y_score: np.ndarray) -> np.nd
     result = y_score.copy()
     result[y_false] = 1.0
     return result
+
+
+def set_all_labels(
+        dataset: Dataset,
+        label: str
+) -> Dataset:
+    """
+    TODO
+    """
+    result = OrderedDict()
+    for filename in dataset:
+        result[filename] = label
+    return result

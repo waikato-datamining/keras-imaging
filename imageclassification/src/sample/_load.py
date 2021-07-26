@@ -1,5 +1,6 @@
 import os.path
 from collections import OrderedDict
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -58,4 +59,29 @@ def load_rois_predictions(dir: str, dataset: Dataset, num_labels: int) -> Predic
                 index = int(label)
                 probabilities[index] = max(probabilities[index], float(score))
         result[filename] = probabilities
+    return result
+
+
+def get_highest_score_bbox(
+        dir: str,
+        dataset: Dataset
+) -> OrderedDict[str, Tuple[int, int, int, int]]:
+    """
+    TODO
+    """
+    result = OrderedDict()
+    for filename in dataset.keys():
+        best_bbox = None
+        best_score = None
+        rois_filename = os.path.basename(filename)[:-4] + "-rois.csv"
+        with open(os.path.join(dir, rois_filename), "r") as file:
+            file.readline()
+            for line in file.readlines():
+                _, x0, y0, x1, y1, _, _, _, _, _, _, score = line.strip().split(",")
+                score = float(score)
+                if best_score is None or best_score < score:
+                    best_score = score
+                    best_bbox = (round(x0), round(y0), round(x1), round(y1))
+        if best_bbox is not None:
+            result[filename] = best_bbox
     return result
