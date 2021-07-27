@@ -54,38 +54,39 @@ with open(f"{MODEL_DIR}/object_labels.txt", "w") as file:
     file.write("object")
 
 # Crop all images in advance
-if not os.path.exists(f"{MODEL_DIR}/dataset_cropped"):
-    write_dataset(change_path(source_dataset, RELATIVE_DIR), f"{MODEL_DIR}/dataset_voc.txt")
-    os.makedirs(f"{MODEL_DIR}/dataset_rois")
-    os.makedirs(f"{MODEL_DIR}/dataset_cropped")
-    wai_annotations_main([
-        "convert",
-        "from-voc-od",
-        "-I",
-        f"{MODEL_DIR}/dataset_voc.txt",
-        "to-roi-od",
-        "--annotations-only",
-        "-o",
-        f"{MODEL_DIR}/dataset_rois"
-    ])
-    bboxes = get_highest_score_bbox(
-        f"{MODEL_DIR}/dataset_rois",
-        schedule_dataset
-    )
-    dest_path = f"{MODEL_DIR}/dataset_cropped"
-    for index, filename in enumerate(source_dataset, 1):
-        print(f"Cropping image {filename} ({index} of {len(source_dataset)})")
-        if filename in bboxes:
-            crop_image(
-                os.path.join(SOURCE_PATH, filename),
-                dest_path,
-                bboxes[filename]
-            )
-        else:
-            shutil.copy(
-                os.path.join(SOURCE_PATH, filename),
-                dest_path
-            )
+write_dataset(change_path(source_dataset, RELATIVE_DIR), f"{MODEL_DIR}/dataset_voc.txt")
+os.makedirs(f"{MODEL_DIR}/dataset_rois")
+os.makedirs(f"{MODEL_DIR}/dataset_cropped")
+wai_annotations_main([
+    "convert",
+    "from-voc-od",
+    "-I",
+    f"{MODEL_DIR}/dataset_voc.txt",
+    "to-roi-od",
+    "--annotations-only",
+    "-o",
+    f"{MODEL_DIR}/dataset_rois"
+])
+bboxes = get_highest_score_bbox(
+    f"{MODEL_DIR}/dataset_rois",
+    schedule_dataset
+)
+for index, filename in enumerate(source_dataset, 1):
+    label = source_dataset[filename]
+    dest_path = f"{MODEL_DIR}/dataset_cropped/{label}"
+    os.makedirs(dest_path, exist_ok=True)
+    print(f"Cropping image {filename} ({index} of {len(source_dataset)})")
+    if filename in bboxes:
+        crop_image(
+            os.path.join(SOURCE_PATH, filename),
+            dest_path,
+            bboxes[filename]
+        )
+    else:
+        shutil.copy(
+            os.path.join(SOURCE_PATH, filename),
+            dest_path
+        )
     
 holdout_dataset = load_dataset("holdout.txt")
 
@@ -158,24 +159,10 @@ while True:
         f"mmdet_train /setup.py"
     )
 
-    # Train the image classifier on the cropped images
-    with distribute.MirroredStrategy([f"GPU:{GPU}"]).scope():
-        model = model_for_fine_tuning(IC_MODEL, len(label_indices), "imagenet")
-        opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
-        model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-        train_gen = data_flow_from_disk(SOURCE_PATH, change_path(train_dataset, f"{MODEL_DIR}/dataset_cropped"), label_indices, True, BS, SEED, MODEL)
-        val_gen = data_flow_from_disk(SOURCE_PATH, change_path(validation_dataset, f"{MODEL_DIR}/dataset_cropped"), label_indices, False, BS, SEED, MODEL)
-        model.fit(
-            train_gen,
-            validation_data=val_gen,
-            epochs=NUM_EPOCHS
-        )
-
+    # Use boxer to predict bboxes for the holdout dataset
     write_dataset(change_path(holdout_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/holdout.txt")
-
     os.makedirs(f"{ITERATION_DIR}/predictions")
     os.makedirs(f"{ITERATION_DIR}/predictions_in")
-
     wai_annotations_main([
         "convert",
         "from-voc-od",
@@ -190,7 +177,6 @@ while True:
         "--categories",
         "object"
     ])
-
     run_command(
         f"docker run "
         f"--gpus device={GPU} "
@@ -214,14 +200,62 @@ while True:
         f"--delete_input"
     )
 
+    # If there is going to be another iteration, also predict bboxes for update dataset
+    update_dataset = None
+    if len(remaining_dataset) != 0:
+        update_dataset, remaining_dataset = splitter(remaining_dataset)
+        write_dataset(change_path(update_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/update.txt")
+        os.makedirs(f"{ITERATION_DIR}/update_predictions")
+        os.makedirs(f"{ITERATION_DIR}/update_predictions_in")
+        wai_annotations_main([
+            "convert",
+            "from-voc-od",
+            "-I",
+            f"{ITERATION_DIR}/update.txt",
+            "map-labels",
+            *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
+            "to-coco-od",
+            "-o",
+            f"{ITERATION_DIR}/update_predictions_in/annotations.json",
+            "--pretty",
+            "--categories",
+            "object"
+        ])
+        run_command(
+            f"docker run "
+            f"--gpus device={GPU} "
+            f"--shm-size 8G "
+            f"-u $(id -u):$(id -g) "
+            f"-e USER=$USER "
+            f"-e MMDET_CLASSES=\"'/labels.txt'\" "
+            f"-e MMDET_OUTPUT=/data/output "
+            f"-v {MODEL_DIR}/object_labels.txt:/labels.txt "
+            f"-v {MODEL_DIR}/setup.py:/setup.py "
+            f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
+            f"-v {ITERATION_DIR}:/data "
+            f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
+            f"mmdet_predict "
+            f"--checkpoint /data/output/latest.pth "
+            f"--config /setup.py "
+            f"--prediction_in /data/update_predictions_in/ "
+            f"--prediction_out /data/update_predictions/ "
+            f"--labels /labels.txt "
+            f"--score 0 "
+            f"--delete_input"
+        )
+
+    # Write the cropped training/validation datasets
+    write_dataset(change_path(train_dataset, f"/dataset_cropped", True), f"{ITERATION_DIR}/train_cropped.txt")
+    write_dataset(change_path(validation_dataset, f"/dataset_cropped", True), f"{ITERATION_DIR}/validation_cropped.txt")
+
+    # Crop the holdout dataset using the bboxes predicted by the boxer
     bboxes = get_highest_score_bbox(
         f"{ITERATION_DIR}/predictions",
         holdout_dataset
     )
-
-    dest_path = f"{ITERATION_DIR}/holdout_cropped"
-    os.makedirs(dest_path, exist_ok=True)
-    for filename in holdout_dataset:
+    for filename, label in holdout_dataset.items():
+        dest_path = f"{ITERATION_DIR}/holdout_cropped/{label}"
+        os.makedirs(dest_path, exist_ok=True)
         if filename in bboxes:
             crop_image(
                 os.path.join(SOURCE_PATH, filename),
@@ -233,100 +267,58 @@ while True:
                 os.path.join(SOURCE_PATH, filename),
                 dest_path
             )
+    write_dataset(change_path(holdout_dataset, f"/holdout_cropped", True), f"{ITERATION_DIR}/holdout_cropped.txt")
 
-    with distribute.MirroredStrategy([f"GPU:{GPU}"]).scope():
-        predict_gen = data_flow_from_disk(SOURCE_PATH, change_path(holdout_dataset, dest_path), label_indices, False, BS, SEED, MODEL)
-
-        predictions: Predictions = OrderedDict()
-        for holdout_item, prediction in zip(holdout_dataset.keys(), model.predict(predict_gen)):
-            predictions[holdout_item] = prediction
-
-        write_predictions(
-            predictions,
-            PREDICTIONS_FILE_HEADER,
-            f"{ITERATION_DIR}/predictions.txt"
+    # If there is going to be another iteration, also crop the update dataset
+    if update_dataset is not None:
+        bboxes = get_highest_score_bbox(
+            f"{ITERATION_DIR}/update_predictions",
+            update_dataset
         )
+        for filename, label in update_dataset.items():
+            dest_path = f"{ITERATION_DIR}/update_cropped/{label}"
+            os.makedirs(dest_path, exist_ok=True)
+            if filename in bboxes:
+                crop_image(
+                    os.path.join(SOURCE_PATH, filename),
+                    dest_path,
+                    bboxes[filename]
+                )
+            else:
+                shutil.copy(
+                    os.path.join(SOURCE_PATH, filename),
+                    dest_path
+                )
+        write_dataset(change_path(update_dataset, f"/update_cropped", True), f"{ITERATION_DIR}/update_cropped.txt")
 
-    if len(remaining_dataset) == 0:
-        break
-
-    update_dataset, remaining_dataset = splitter(remaining_dataset)
-
-    write_dataset(change_path(update_dataset, RELATIVE_DIR), f"{ITERATION_DIR}/update.txt")
-
-    os.makedirs(f"{ITERATION_DIR}/update_predictions")
-    os.makedirs(f"{ITERATION_DIR}/update_predictions_in")
-
-    wai_annotations_main([
-        "convert",
-        "from-voc-od",
-        "-I",
-        f"{ITERATION_DIR}/update.txt",
-        "map-labels",
-        *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
-        "to-coco-od",
-        "-o",
-        f"{ITERATION_DIR}/update_predictions_in/annotations.json",
-        "--pretty",
-        "--categories",
-        "object"
-    ])
-
+    # Use the associated Docker image to perform classification steps
+    predict_datasets = "/holdout_cropped.txt" if update_dataset is None else "/holdout_cropped.txt /update_cropped.txt"
+    predict_volumes = (
+        f"-v {ITERATION_DIR}/holdout_cropped:/holdout_cropped "
+        f"-v {ITERATION_DIR}/holdout_cropped.txt:/holdout_cropped.txt"
+        if update_dataset is None else
+        f"-v {ITERATION_DIR}/holdout_cropped:/holdout_cropped "
+        f"-v {ITERATION_DIR}/holdout_cropped.txt:/holdout_cropped.txt "
+        f"-v {ITERATION_DIR}/update_cropped:/update_cropped "
+        f"-v {ITERATION_DIR}/update_cropped.txt:/update_cropped.txt"
+    )
     run_command(
         f"docker run "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-u $(id -u):$(id -g) "
         f"-e USER=$USER "
-        f"-e MMDET_CLASSES=\"'/labels.txt'\" "
-        f"-e MMDET_OUTPUT=/data/output "
-        f"-v {MODEL_DIR}/object_labels.txt:/labels.txt "
-        f"-v {MODEL_DIR}/setup.py:/setup.py "
-        f"-v {os.path.join(CWD, '..', f'base_{MODEL}.pth')}:/model.pth "
-        f"-v {ITERATION_DIR}:/data "
-        f"public.aml-repo.cms.waikato.ac.nz:443/open-mmlab/mmdetection:2020-03-01_cuda10 "
-        f"mmdet_predict "
-        f"--checkpoint /data/output/latest.pth "
-        f"--config /setup.py "
-        f"--prediction_in /data/update_predictions_in/ "
-        f"--prediction_out /data/update_predictions/ "
-        f"--labels /labels.txt "
-        f"--score 0 "
-        f"--delete_input"
+        f"{predict_volumes} "
+        f"-v {MODEL_DIR}/dataset_cropped:/dataset_cropped "
+        f"-v {ITERATION_DIR}/train_cropped.txt:/train.txt "
+        f"-v {ITERATION_DIR}/validation_cropped.txt:/val.txt "
+        f"-v {sys.argv[1]}:/dataset.txt "
+        f"-v {ITERATION_DIR}:/output "
+        f"fine_tune_hybrid_ic "
+        f"{NUM_EPOCHS} "
+        f"{IC_MODEL} "
+        f"{predict_datasets}"
     )
-
-    bboxes = get_highest_score_bbox(
-        f"{ITERATION_DIR}/update_predictions",
-        update_dataset
-    )
-
-    dest_path = f"{ITERATION_DIR}/update_cropped"
-    os.makedirs(dest_path, exist_ok=True)
-    for filename in update_dataset:
-        if filename in bboxes:
-            crop_image(
-                os.path.join(SOURCE_PATH, filename),
-                dest_path,
-                bboxes[filename]
-            )
-        else:
-            shutil.copy(
-                os.path.join(SOURCE_PATH, filename),
-                dest_path
-            )
-
-    with distribute.MirroredStrategy([f"GPU:{GPU}"]).scope():
-        predict_gen = data_flow_from_disk(SOURCE_PATH, change_path(update_dataset, dest_path), label_indices, False, BS, SEED, MODEL)
-
-        predictions: Predictions = OrderedDict()
-        for holdout_item, prediction in zip(holdout_dataset.keys(), model.predict(predict_gen)):
-            predictions[holdout_item] = prediction
-
-        write_predictions(
-            predictions,
-            PREDICTIONS_FILE_HEADER,
-            f"{ITERATION_DIR}/update_predictions.txt"
-        )
 
     # Clean up
     rm_dir(f"{ITERATION_DIR}/output")
