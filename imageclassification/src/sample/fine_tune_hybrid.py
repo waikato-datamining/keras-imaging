@@ -72,7 +72,7 @@ bboxes = get_highest_score_bbox(
 )
 dest_path = f"{MODEL_DIR}/dataset_cropped"
 for index, filename in enumerate(source_dataset, 1):
-    print(f"Cropping {index} of {len(source_dataset)}")
+    print(f"Cropping image {filename} ({index} of {len(source_dataset)})")
     if filename in bboxes:
         crop_image(
             os.path.join(SOURCE_PATH, filename),
