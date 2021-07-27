@@ -81,7 +81,12 @@ def get_highest_score_bbox(
                 score = float(score)
                 if best_score is None or best_score < score:
                     best_score = score
-                    best_bbox = (round(x0), round(y0), round(x1), round(y1))
+                    best_bbox = (
+                        round(float(x0)),
+                        round(float(y0)),
+                        round(float(x1)),
+                        round(float(y1))
+                    )
         if best_bbox is not None:
             result[filename] = best_bbox
     return result
