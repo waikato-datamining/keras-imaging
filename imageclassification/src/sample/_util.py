@@ -2,7 +2,7 @@ from collections import OrderedDict
 import os
 from random import Random
 import subprocess
-from typing import Iterable, List, Tuple, OrderedDict as ODict
+from typing import Iterable, List, Optional, Tuple, OrderedDict as ODict
 
 import numpy as np
 
@@ -84,24 +84,27 @@ def top_n(dataset: Dataset, n: int) -> Dataset:
 
 def change_path(
         dataset: Dataset,
-        path: str
+        path: str,
+        subdir: bool = False
 ) -> Dataset:
     """
     TODO
     """
     result = OrderedDict()
     for filename, label in dataset.items():
-        changed_filename = change_filename(filename, path)
+        changed_filename = change_filename(filename, path, label if subdir else None)
         result[changed_filename] = dataset[filename]
     return result
 
 
-def change_filename(filename: str, path: str) -> str:
+def change_filename(filename: str, path: str, label: Optional[str] = None) -> str:
     """
     TODO
     """
     _, file = os.path.split(filename)
     file, ext = os.path.splitext(file)
+    if label is not None:
+        path = os.path.join(path, label)
     return os.path.join(path, f"{file}.xml")
 
 
