@@ -71,7 +71,6 @@ bboxes = get_highest_score_bbox(
     schedule_dataset
 )
 dest_path = f"{MODEL_DIR}/dataset_cropped"
-os.makedirs(dest_path)
 for filename, label in source_dataset.items():
     if filename in bboxes:
         crop_image(
