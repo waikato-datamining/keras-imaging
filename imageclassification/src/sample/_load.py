@@ -1,6 +1,6 @@
 import os.path
 from collections import OrderedDict
-from typing import Optional, Tuple
+from typing import Tuple, OrderedDict as ODict
 
 import numpy as np
 
@@ -65,7 +65,7 @@ def load_rois_predictions(dir: str, dataset: Dataset, num_labels: int) -> Predic
 def get_highest_score_bbox(
         dir: str,
         dataset: Dataset
-) -> OrderedDict[str, Tuple[int, int, int, int]]:
+) -> ODict[str, Tuple[int, int, int, int]]:
     """
     TODO
     """
