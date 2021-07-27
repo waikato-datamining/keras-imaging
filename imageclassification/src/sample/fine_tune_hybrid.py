@@ -159,7 +159,7 @@ while True:
 
     # Train the image classifier on the cropped images
     with distribute.MirroredStrategy([f"GPU:{GPU}"]).scope():
-        model = model_for_fine_tuning(MODEL, len(label_indices), "imagenet")
+        model = model_for_fine_tuning(IC_MODEL, len(label_indices), "imagenet")
         opt = keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / NUM_EPOCHS)
         model.compile(loss="sparse_categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
         train_gen = data_flow_from_disk(SOURCE_PATH, change_path(train_dataset, f"{MODEL_DIR}/dataset_cropped"), label_indices, True, BS, SEED, MODEL)
