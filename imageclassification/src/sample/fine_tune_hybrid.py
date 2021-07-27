@@ -6,6 +6,7 @@ from random import Random
 
 from tensorflow import keras
 from tensorflow import distribute
+from wai.annotations.core.util import chain_map
 from wai.annotations.main import main as wai_annotations_main
 
 from sample import *
@@ -118,8 +119,7 @@ while True:
         "-I",
         f"{ITERATION_DIR}/validation.txt",
         "map-labels",
-        "-m",
-        *(f"{label}=object" for label in label_indices.keys()),
+        *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
         "to-coco-od",
         "-o",
         f"{ITERATION_DIR}/val/annotations.json",
@@ -133,8 +133,7 @@ while True:
         "-I",
         f"{ITERATION_DIR}/train.txt",
         "map-labels",
-        "-m",
-        *(f"{label}=object" for label in label_indices.keys()),
+        *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
         "to-coco-od",
         "-o",
         f"{ITERATION_DIR}/train/annotations.json",
@@ -182,8 +181,7 @@ while True:
         "-I",
         f"{ITERATION_DIR}/holdout.txt",
         "map-labels",
-        "-m",
-        *(f"{label}=object" for label in label_indices.keys()),
+        *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
         "to-coco-od",
         "-o",
         f"{ITERATION_DIR}/predictions_in/annotations.json",
@@ -264,8 +262,7 @@ while True:
         "-I",
         f"{ITERATION_DIR}/update.txt",
         "map-labels",
-        "-m",
-        *(f"{label}=object" for label in label_indices.keys()),
+        *chain_map(lambda label: ("-m", f"{label}=object"), label_indices.keys()),
         "to-coco-od",
         "-o",
         f"{ITERATION_DIR}/update_predictions_in/annotations.json",
