@@ -245,8 +245,8 @@ while True:
         )
 
     # Write the cropped training/validation datasets
-    write_dataset(change_path(train_dataset, f"/dataset_cropped", True), f"{ITERATION_DIR}/train_cropped.txt")
-    write_dataset(change_path(validation_dataset, f"/dataset_cropped", True), f"{ITERATION_DIR}/validation_cropped.txt")
+    write_dataset(change_path(train_dataset, "dataset_cropped", True, None), f"{ITERATION_DIR}/train_cropped.txt")
+    write_dataset(change_path(validation_dataset, "dataset_cropped", True, None), f"{ITERATION_DIR}/validation_cropped.txt")
 
     # Crop the holdout dataset using the bboxes predicted by the boxer
     bboxes = get_highest_score_bbox(
@@ -267,7 +267,7 @@ while True:
                 os.path.join(SOURCE_PATH, filename),
                 dest_path
             )
-    write_dataset(change_path(holdout_dataset, f"/holdout_cropped", True), f"{ITERATION_DIR}/holdout_cropped.txt")
+    write_dataset(change_path(holdout_dataset, "holdout_cropped", True, None), f"{ITERATION_DIR}/holdout_cropped.txt")
 
     # If there is going to be another iteration, also crop the update dataset
     if update_dataset is not None:
@@ -289,7 +289,7 @@ while True:
                     os.path.join(SOURCE_PATH, filename),
                     dest_path
                 )
-        write_dataset(change_path(update_dataset, f"/update_cropped", True), f"{ITERATION_DIR}/update_cropped.txt")
+        write_dataset(change_path(update_dataset, f"update_cropped", True, None), f"{ITERATION_DIR}/update_cropped.txt")
 
     # Use the associated Docker image to perform classification steps
     predict_datasets = "/holdout_cropped.txt" if update_dataset is None else "/holdout_cropped.txt /update_cropped.txt"

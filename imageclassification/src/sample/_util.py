@@ -85,27 +85,30 @@ def top_n(dataset: Dataset, n: int) -> Dataset:
 def change_path(
         dataset: Dataset,
         path: str,
-        subdir: bool = False
+        subdir: bool = False,
+        ext: Optional[str] = "xml"
 ) -> Dataset:
     """
     TODO
     """
     result = OrderedDict()
     for filename, label in dataset.items():
-        changed_filename = change_filename(filename, path, label if subdir else None)
+        changed_filename = change_filename(filename, path, label if subdir else None, ext)
         result[changed_filename] = dataset[filename]
     return result
 
 
-def change_filename(filename: str, path: str, label: Optional[str] = None) -> str:
+def change_filename(filename: str, path: str, label: Optional[str] = None, ext: Optional[str] = "xml") -> str:
     """
     TODO
     """
     _, file = os.path.split(filename)
-    file, ext = os.path.splitext(file)
+    if ext is not None:
+        file, _ = os.path.splitext(file)
+        file = f"{file}.{ext}"
     if label is not None:
         path = os.path.join(path, label)
-    return os.path.join(path, f"{file}.xml")
+    return os.path.join(path, file)
 
 
 def shuffle_dataset(dataset: Dataset, random: Random = Random()) -> Dataset:
