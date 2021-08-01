@@ -408,8 +408,8 @@ while True:
     # Clean up
     rm_dir(f"{ITERATION_DIR}/predictions_in")
     rm_dir(f"{ITERATION_DIR}/update_predictions_in")
-    rm_dir(f"{ITERATION_DIR}/train")
-    rm_dir(f"{ITERATION_DIR}/val")
+    rm_dir(f"{ITERATION_DIR}/training_predictions_in")
+    rm_dir(f"{ITERATION_DIR}/val_predictions_in")
     os.remove(f"{ITERATION_DIR}/validation.txt")
     os.remove(f"{ITERATION_DIR}/train.txt")
     os.remove(f"{ITERATION_DIR}/update.txt")
