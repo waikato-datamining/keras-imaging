@@ -50,41 +50,6 @@ with open(f"{MODEL_DIR}/labels.txt", "w") as file:
 with open(f"{MODEL_DIR}/object_labels.txt", "w") as file:
     file.write("object")
 
-# Crop all images in advance
-write_dataset(change_path(source_dataset, RELATIVE_DIR), f"{MODEL_DIR}/dataset_voc.txt")
-os.makedirs(f"{MODEL_DIR}/dataset_rois")
-os.makedirs(f"{MODEL_DIR}/dataset_cropped")
-wai_annotations_main([
-    "convert",
-    "from-voc-od",
-    "-I",
-    f"{MODEL_DIR}/dataset_voc.txt",
-    "to-roi-od",
-    "--annotations-only",
-    "-o",
-    f"{MODEL_DIR}/dataset_rois"
-])
-bboxes = get_highest_score_bbox(
-    f"{MODEL_DIR}/dataset_rois",
-    schedule_dataset
-)
-for index, filename in enumerate(source_dataset, 1):
-    label = source_dataset[filename]
-    dest_path = f"{MODEL_DIR}/dataset_cropped/{label}"
-    os.makedirs(dest_path, exist_ok=True)
-    print(f"Cropping image {filename} ({index} of {len(source_dataset)})")
-    if filename in bboxes:
-        crop_image(
-            os.path.join(SOURCE_PATH, filename),
-            dest_path,
-            bboxes[filename]
-        )
-    else:
-        shutil.copy(
-            os.path.join(SOURCE_PATH, filename),
-            dest_path
-        )
-
 holdout_dataset = load_dataset("holdout.txt")
 
 splitter = TopNSplitter(50)
