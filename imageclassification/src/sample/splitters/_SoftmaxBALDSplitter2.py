@@ -45,8 +45,9 @@ class SoftmaxBALDSplitter2(Splitter):
                     normalisation_factor -= score
                     break
 
-        for filename, _ in scores:
-            result[1][filename] = dataset[filename]
+        for filename in dataset:
+            if filename not in result[0]:
+                result[1][filename] = dataset[filename]
 
         return result
 
