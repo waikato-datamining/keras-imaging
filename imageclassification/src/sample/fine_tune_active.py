@@ -6,7 +6,7 @@ from random import Random
 from tensorflow import keras
 
 from sample import *
-from sample.splitters import RandomSplitter, RankedEntropySplitter, SoftmaxBALDSplitter
+from sample.splitters import RandomSplitter, RankedEntropySplitter, SoftmaxBALDSplitter2
 
 INIT_LR = 1e-4
 BS = 5
@@ -26,7 +26,7 @@ elif sys.argv[4] == "softmaxBALD":
     SPLITTER = f"softmaxBALD-{TEMPERATURE}"
 
     def SPLITTER_FACTORY(pred, size):
-        return SoftmaxBALDSplitter(pred, size, TEMPERATURE)
+        return SoftmaxBALDSplitter2(pred, size, TEMPERATURE, RANDOM)
 else:
     raise Exception(f"Unknown splitter '{sys.argv[4]}'")
 
