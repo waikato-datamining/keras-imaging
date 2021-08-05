@@ -1,5 +1,7 @@
 from ._KernelHerdingSplitter import KernelHerdingSplitter
 from ._RandomSplitter import RandomSplitter
+from ._RankedEntropySplitter import RankedEntropySplitter
+from ._SoftmaxBALDSplitter import SoftmaxBALDSplitter
 from ._Splitter import Splitter
 from ._StratifiedSplitter import StratifiedSplitter
 from ._TopNSplitter import TopNSplitter
