@@ -23,7 +23,7 @@ class SoftmaxBALDSplitter(Splitter):
     def __call__(self, dataset: Dataset) -> Split:
         # Calculate the entropy for each item
         scores = [
-            (filename, entropy(self._predictions[filename]))
+            [filename, entropy(self._predictions[filename])]
             for filename in dataset
         ]
 
