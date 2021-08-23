@@ -26,7 +26,7 @@ RUN \
     git clone https://github.com/waikato-datamining/keras-imaging.git && \
     ${PYTHON} -m venv venv && \
     ./venv/bin/pip install --upgrade pip setuptools && \
-    ./venv/bin/pip install tensorflow==2.4.0 pandas pillow scipy
+    ./venv/bin/pip install tensorflow==2.4.0 pandas pillow scipy wai.common
 
 ENV PYTHONPATH=/source/keras-imaging/imageclassification/src
 
