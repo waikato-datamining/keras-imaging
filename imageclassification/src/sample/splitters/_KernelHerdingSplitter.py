@@ -1,10 +1,11 @@
 from collections import OrderedDict
+from typing import Union
 
 import numpy as np
 
 from .._kernel import RBFKernel2
 from .._load import load_predictions
-from .._types import Dataset, Split
+from .._types import Dataset, Predictions, Split
 from .._util import compare_ignore_index
 from ._Splitter import Splitter
 
@@ -13,9 +14,9 @@ class KernelHerdingSplitter(Splitter):
     """
     TODO
     """
-    def __init__(self, model:str, predictions_path: str, count: int):
+    def __init__(self, model:str, predictions_path: Union[str, Predictions], count: int):
         self._model = model
-        self._predictions = load_predictions(predictions_path)
+        self._predictions = load_predictions(predictions_path) if isinstance(predictions_path, str) else predictions_path
         self._count = count
 
     def __call__(self, dataset: Dataset) -> Split:

@@ -6,7 +6,7 @@ from random import Random
 from tensorflow import keras
 
 from sample import *
-from sample.splitters import RandomSplitter, RankedEntropySplitter, SoftmaxBALDSplitter2
+from sample.splitters import RandomSplitter, RankedEntropySplitter, SoftmaxBALDSplitter2, KernelHerdingSplitter
 
 INIT_LR = 1e-4
 BS = 5
@@ -27,6 +27,11 @@ elif sys.argv[4] == "softmaxBALD":
 
     def SPLITTER_FACTORY(pred, size):
         return SoftmaxBALDSplitter2(pred, size, TEMPERATURE, RANDOM)
+elif sys.argv[4] == "kh":
+    SPLITTER = "kh"
+
+    def SPLITTER_FACTORY(pred, size):
+        return KernelHerdingSplitter(MODEL, pred, size)
 else:
     raise Exception(f"Unknown splitter '{sys.argv[4]}'")
 
