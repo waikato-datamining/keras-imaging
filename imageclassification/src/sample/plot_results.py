@@ -1,3 +1,4 @@
+import itertools
 import sys
 from collections import OrderedDict
 
@@ -15,8 +16,12 @@ with open(SOURCE, "r") as source_file:
         prediction = f"{predicted_on}_{type}"
         iteration = int(iteration)
         value = float(value)
-
-        if model == "r101":
+        if "." in model:
+            if split != "uni":
+                continue
+            model, split = model.split(".", 1)
+            split = f"active-{split}"
+        elif split == "uni":
             continue
 
         if dataset not in results:
@@ -54,6 +59,8 @@ fig, axes = pyplot.subplots(3, 3, sharey="row", sharex="row", constrained_layout
 fig.suptitle(TARGET)
 fig.supylabel("Dataset")
 fig.supxlabel("Model")
+colour_cycle: itertools.cycle = pyplot.rcParams['axes.prop_cycle']()
+split_colours = {}
 axes_iter = axes.flat
 lines = []
 for dataset, dataset_dict in results.items():
@@ -63,8 +70,10 @@ for dataset, dataset_dict in results.items():
         axis.set_xlabel('Iteration')
         axis.set_ylabel(Y_LABEL)
         for split, split_dict in model_dict.items():
+            if split not in split_colours:
+                split_colours[split] = next(colour_cycle)['color']
             prediction_list = split_dict[TARGET]
-            lines.append(axis.plot(prediction_list, label=split))
+            lines.append(axis.plot(prediction_list, label=split, color=split_colours[split]))
         axis.set_ybound(lower=0.0)
 
 fig.legend(*axis.get_legend_handles_labels())
