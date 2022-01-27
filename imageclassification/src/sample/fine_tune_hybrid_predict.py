@@ -109,6 +109,7 @@ while True:
         ])
         run_command(
             f"docker run "
+            f"--rm "
             f"--gpus device={GPU} "
             f"--shm-size 8G "
             f"-u $(id -u):$(id -g) "
@@ -142,6 +143,7 @@ while True:
     ])
     run_command(
         f"docker run "
+        f"--rm "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-u $(id -u):$(id -g) "
@@ -183,6 +185,7 @@ while True:
     ])
     run_command(
         f"docker run "
+        f"--rm "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-u $(id -u):$(id -g) "
@@ -225,6 +228,7 @@ while True:
     ])
     run_command(
         f"docker run "
+        f"--rm "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-u $(id -u):$(id -g) "
@@ -270,6 +274,7 @@ while True:
         ])
         run_command(
             f"docker run "
+            f"--rm "
             f"--gpus device={GPU} "
             f"--shm-size 8G "
             f"-u $(id -u):$(id -g) "
@@ -388,6 +393,7 @@ while True:
     )
     run_command(
         f"docker run "
+        f"--rm "
         f"--gpus device={GPU} "
         f"--shm-size 8G "
         f"-u $(id -u):$(id -g) "
